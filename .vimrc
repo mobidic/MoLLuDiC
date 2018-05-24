@@ -1,3 +1,6 @@
+"Enable line number 
+set number
+
 execute pathogen#infect()
 filetype off      " Re-enabled after plugins
 
