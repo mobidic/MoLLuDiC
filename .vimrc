@@ -18,6 +18,7 @@ Plug 'xuhdev/vim-latex-live-preview', { 'for': 'tex' }
 Plug 'itchyny/lightline.vim'
 Plug 'sheerun/vim-polyglot'
 Plug 'joshdick/onedark.vim'
+Plug 'broadinstitute/vim-wdl' "Wdl syntax highlight
 "  ...
 call plug#end()
 
