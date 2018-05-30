@@ -1,9 +1,6 @@
 "Enable line number 
 set number
 
-execute pathogen#infect()
-filetype off      " Re-enabled after plugins
-
 " Plugin configuration
 call plug#begin()
 Plug 'scrooloose/nerdtree' "Arbo
@@ -55,9 +52,6 @@ autocmd Filetype tex setl updatetime=1
 nmap <F12> :LLPStartPreview<cr>
 
 " Theme activation 
-"let g:lightline = {
-"  \ 'colorscheme': 'onedark',
-"  \ }
 let g:onedark_termcolors=256
 syntax on
 colorscheme onedark
