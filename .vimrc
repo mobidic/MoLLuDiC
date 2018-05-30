@@ -1,6 +1,4 @@
-"Enable line number 
-set number
-
+filetype off "Re-enable after plugins
 " Plugin configuration
 call plug#begin()
 Plug 'scrooloose/nerdtree' "Arbo
@@ -18,8 +16,10 @@ Plug 'joshdick/onedark.vim'
 Plug 'broadinstitute/vim-wdl' "Wdl syntax highlight
 "  ...
 call plug#end()
-
 filetype plugin indent on
+
+"Enable line number 
+set number
 
 "Nerdtree Conf
 autocmd vimenter * NERDTree
@@ -55,3 +55,6 @@ nmap <F12> :LLPStartPreview<cr>
 let g:onedark_termcolors=256
 syntax on
 colorscheme onedark
+
+"Syntax HL
+let g:polyglot_disabled = ['markdown']
