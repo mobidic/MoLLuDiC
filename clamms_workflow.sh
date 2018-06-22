@@ -135,16 +135,55 @@ mapinstall(){
 # CREATE WINDOWS BED - 1T
 ###########################################################
 
-# -- Command : ./clamms_workflow.sh windowsBed /PATH/TO/annotate_windows.sh 
+# -- Command : ./clamms_workflow.sh windowsBed /PATH/TO/annotate_windows.sh INSER_SIZE
 
 #A faire tourner avec "chr", enlever "chr" en sortie du windows.bed
 #le github préconise de faire tourner sans le "chr" => prevoir un genome fasta sans chr
 #pour l'insert size prevoir un peu plus long que le fragment size ex: 200pb -> 250pb
 
 windowsBed(){
-  export INSERT_SIZE=250
+
+  CLAMS_DIR=$1
+  INSER_SIZE=$2
+  
+  debug "Clams directory is : \"$1\""
+  debug "Inser size is : \"$2\""
+
+  info "Checking windowsBed's arguments..."
+
+  # - Check if /PATH/TO/CLAMS exists
+  if [ ! -d $1 ]
+  then 
+    error "\"$1\" is not a correct path to clams directory"
+    help 
+  fi 
+  # - Check if /PATH/TO/annotate_windows.sh exists 
+  if [ ! -f "$1/annotate_windows.sh" ]
+  then 
+    error "\"annotate_windows.sh\" in \"$1\" does not exist !"
+    help 
+  fi 
+  # - Check if /PATH/TO/data/clams_special_regions.bed exists 
+  if [ ! -f "$1/data/clams_special_regions.bed" ]
+  then 
+    error "\"data/clams_special_regions.bed\" in \"$1\" does not exist !"
+    help 
+  fi 
+
+  # - Check if INSER_SIZE is an integer
+  if ! [[ "$2" =~ ^[0-9]+$ ]]
+  then 
+    error "\"$2\" is not an integer !"
+    help 
+  fi 
+
+  info "... Argument checking : done !"
+  info "Launching annotate_windows.sh ..."
+
   chmod +x $CLAMMS_DIR/annotate_windows.sh
   $CLAMMS_DIR/annotate_windows.sh  ~/resources/hg19/S04380110_Regions_nochr.bed  ~/resources/hg19/ucsc.hg19.nochr.fasta  ~/PROJECTS/EXOMES/ressources/mappability.bed $INSERT_SIZE $CLAMMS_DIR/data/clamms_special_regions.bed > ~/PROJECTS/EXOMES/ressources/windows_nochr_S04380110_${INSERT_SIZE}pb.bed
+  
+  info "... Done !"
 }
 
 
@@ -165,33 +204,38 @@ normalize(){
 ###########################################
 
 #create metrics matrix for KD tree, all in one: (be careful, column position of picard metrics could change, better to do a grep instead)
-for i in *hs_metrics.txt ; do 
-  echo "SAMPLE"> ${i/hs_metrics/kd_sample} ;
-  echo ${i/_hs_metrics.txt} >> ${i/hs_metrics/kd_sample}; 
-  grep -v "#" $i | head -3 | tail -2 | cut -f51,42,38,21,10,52 > ${i/hs_metrics/kd_hsmetrics} ;
-  grep -v "#" ${i/hs/insertsize} | head -3 | tail -2 | cut -f5 > ${i/hs/kd_insertsize} ;
-  paste ${i/hs_metrics/kd_sample}  ${i/hs_metrics/kd_hsmetrics} ${i/hs_/kd_insertsize_} > ${i/hs_/kdTree_}     ; 
-done
+metricsMatrix(){
 
-#for 1 sample
-#how to get sample ID  argument?
-echo "SAMPLE" > $SAMPLEID_kd_sample.txt
-echo $SAMPLEID >> $SAMPLEID_kd_sample.txt 
-#path to multiple metrics
-grep -v "#" $SAMPLEID_hs_metrics.txt | head -3 | tail -2 | cut -f51,42,38,21,10,52 > $SAMPLEID_kd_hsmetrics.txt 
-#path to insertsize metrics
-grep -v "#" $SAMPLEID_insertsize_metrics.txt} | head -3 | tail -2 | cut -f5 > $SAMPLEID_kd_insertsize_metrics.txt 
-paste $SAMPLEID_kd_sample.txt $SAMPLEID_kd_hsmetrics.txt   $SAMPLEID_kd_insertsize_metrics.txt >  $SAMPLEID_kdTree_metrics.txt 
-# $SAMPLEID_kdTree_metrics.txt a ecrire dans le répertoire kdTreeMetrics
+  for i in *hs_metrics.txt ; do 
+    echo "SAMPLE"> ${i/hs_metrics/kd_sample} ;
+    echo ${i/_hs_metrics.txt} >> ${i/hs_metrics/kd_sample}; 
+    grep -v "#" $i | head -3 | tail -2 | cut -f51,42,38,21,10,52 > ${i/hs_metrics/kd_hsmetrics} ;
+    grep -v "#" ${i/hs/insertsize} | head -3 | tail -2 | cut -f5 > ${i/hs/kd_insertsize} ;
+    paste ${i/hs_metrics/kd_sample}  ${i/hs_metrics/kd_hsmetrics} ${i/hs_/kd_insertsize_} > ${i/hs_/kdTree_}     ; 
+  done
 
-#head the file with parameter names
-cat $SAMPLEID_kdTree_metrics.txt  > ALL_kdTreeMetrics.txt
-#fill with the data (check if conversion of "," into "." is nedded)
-for i in *kdTree_metrics.txt; do t -1 $i | sed 's/,/./g' >> ALL_kdTreeMetrics.txt ; done
+  #for 1 sample
+  #how to get sample ID  argument?
+  echo "SAMPLE" > $SAMPLEID_kd_sample.txt
+  echo $SAMPLEID >> $SAMPLEID_kd_sample.txt 
+  #path to multiple metrics
+  grep -v "#" $SAMPLEID_hs_metrics.txt | head -3 | tail -2 | cut -f51,42,38,21,10,52 > $SAMPLEID_kd_hsmetrics.txt 
+  #path to insertsize metrics
+  grep -v "#" $SAMPLEID_insertsize_metrics.txt | head -3 | tail -2 | cut -f5 > $SAMPLEID_kd_insertsize_metrics.txt 
+  paste $SAMPLEID_kd_sample.txt $SAMPLEID_kd_hsmetrics.txt   $SAMPLEID_kd_insertsize_metrics.txt >  $SAMPLEID_kdTree_metrics.txt 
+  # $SAMPLEID_kdTree_metrics.txt a ecrire dans le répertoire kdTreeMetrics
 
-#then move to répertoire kdTreeMetrics 
-cp $SAMPLEID_kdTree_metrics.txt kdTreeMetricsDir/
+  #head the file with parameter names
+  cat $SAMPLEID_kdTree_metrics.txt  > ALL_kdTreeMetrics.txt
+  #fill with the data (check if conversion of "," into "." is nedded)
+  for i in *kdTree_metrics.txt; do t -1 $i | sed 's/,/./g' >> ALL_kdTreeMetrics.txt ; done
 
+  #then move to répertoire kdTreeMetrics 
+  cp $SAMPLEID_kdTree_metrics.txt kdTreeMetricsDir/
+
+}
+
+>>>>>>> cb360481efb284d326bd9dc67f5a26dcc454b975
 
 ###########################################
 # MAKEKDTREE
