@@ -304,13 +304,19 @@ metricsMatrix(){
 
 makekdtree(){
 
-  # - Command ./clams.sh makekdtree
+  # - Command ./clams.sh makekdtree knn outdir 
+  
 
-  #ajouter en option le outputDir et corriger le Rscript pour ne traiter que le sample
+  #############################
+  # TO DO 
+  #############################
+  # ajouter en option le outputDir (à tester) 
+  # corriger le Rscript pour ne traiter que le sample
 
-  export KNN=50 #Variable à moduler en option 
-  #Rscript ~/PROJECTS/EXOMES/compute_kdTree.Rscript 50 ALL_kdTreeMetrics.txt
-  Rscript ~/PROJECTS/EXOMES/compute_kdTree.Rscript $KNN ALL_kdTreeMetrics.txt (+ outputDir)
+  KNN=$1 
+  KD_OUT=$2
+  
+  Rscript ~/PROJECTS/EXOMES/compute_kdTree.Rscript ${KNN} ALL_kdTreeMetrics.txt ${KD_OUT}
 
   #sort nns.txt for the next JOIN
   for i in *.${KNN}nns.txt
