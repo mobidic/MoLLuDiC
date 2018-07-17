@@ -180,9 +180,9 @@ windowsBed(){
   info "... Argument checking : done !"
   info "Launching annotate_windows.sh ..."
 
-  chmod +x $CLAMMS_DIR/annotate_windows.sh
-  $CLAMMS_DIR/annotate_windows.sh  ~/resources/hg19/S04380110_Regions_nochr.bed  ~/resources/hg19/ucsc.hg19.nochr.fasta  ~/PROJECTS/EXOMES/ressources/mappability.bed $INSERT_SIZE $CLAMMS_DIR/data/clamms_special_regions.bed > ~/PROJECTS/EXOMES/ressources/windows_nochr_S04380110_${INSERT_SIZE}pb.bed
-  
+  chmod +x ${CLAMMS_DIR}/annotate_windows.sh
+  ${CLAMMS_DIR}/annotate_windows.sh  ~/resources/hg19/S04380110_Regions_nochr.bed  ~/resources/hg19/ucsc.hg19.nochr.fasta  ~/PROJECTS/EXOMES/ressources/mappability.bed ${INSERT_SIZE} ${CLAMMS_DIR}/data/clamms_special_regions.bed > ~/PROJECTS/EXOMES/ressources/windows_nochr_S04380110_${INSERT_SIZE}pb.bed
+
   info "... Done !"
 }
 
@@ -195,7 +195,36 @@ windowsBed(){
 # -- After Samtools 
 
 normalize(){
-  ls *.coverage.nochr.bed | cut -d '.' -f 1 | while read SAMPLE ; do  $CLAMMS_DIR/normalize_coverage $SAMPLE.coverage.nochr.bed windows.bed >$SAMPLE.norm.coverage.bed ;done
+
+  # - Command ./clams.sh normalize /PATH/TO/coverage /PATH/TO/clams_dir SAMPLE
+
+  COVERAGE_PATH=$1
+  CLAMS_DIR=$2
+  SAMPLE=$3
+
+  debug "Coverage path is : \"$1\""
+  debug "Clams directory is : \"$2\""
+  debug "Sample name is : \"$3\""
+ 
+  # - Check if Coverage Path exist 
+  if [ ! -f ${COVERAGE_PATH} ]
+  then
+    error "\"${COVERAGE_PATH}\" does not exist !"
+    help 
+  fi 
+  
+  # - Check 
+  if [ ! -d ${CLAMS_DIR} ]
+  then 
+    error "\"${CLAMS_DIR}\" does not exist ! "
+    help 
+  fi 
+
+  if 
+
+  
+  cd ${COVERAGE_PATH}
+  ls *.coverage.nochr.bed | cut -d '.' -f 1 | while read SAMPLE ; do  ${CLAMMS_DIR}/normalize_coverage ${SAMPLE}.coverage.nochr.bed windows.bed >${SAMPLE}.norm.coverage.bed ;done
 }
 
 
@@ -205,6 +234,18 @@ normalize(){
 
 #create metrics matrix for KD tree, all in one: (be careful, column position of picard metrics could change, better to do a grep instead)
 metricsMatrix(){
+
+  # - Command ./clams.sh metricsMatrix /PATH/TO/hs_metrics SAMPLE SAMPLEKD
+  HS_FOLDER=$1
+  SAMPLEID=$2
+  SAMPLEIDKD=$3
+  SAMPLEID_KD_SAMPLE=$3
+  SAMPLEID_KD_HSMETRICS=$4
+  SAMPLEID_HS_METRICS=$5
+
+
+  
+  cd ${HS_FOLDER}
 
   for i in *hs_metrics.txt ; do 
     echo "SAMPLE"> ${i/hs_metrics/kd_sample} ;
@@ -216,10 +257,10 @@ metricsMatrix(){
 
   #for 1 sample
   #how to get sample ID  argument?
-  echo "SAMPLE" > $SAMPLEID_kd_sample.txt
-  echo $SAMPLEID >> $SAMPLEID_kd_sample.txt 
+  echo "SAMPLE" > ${SAMPLEID_KD_SAMLE}.txt
+  echo ${SAMPLEID} >> ${SAMPLEID_KD_SAMPLE}.txt 
   #path to multiple metrics
-  grep -v "#" $SAMPLEID_hs_metrics.txt | head -3 | tail -2 | cut -f51,42,38,21,10,52 > $SAMPLEID_kd_hsmetrics.txt 
+  grep -v "#" ${SAMPLEID_HS_METRICS}.txt | head -3 | tail -2 | cut -f51,42,38,21,10,52 > ${SAMPLEID_KD_HSMETRICS}.txt 
   #path to insertsize metrics
   grep -v "#" $SAMPLEID_insertsize_metrics.txt | head -3 | tail -2 | cut -f5 > $SAMPLEID_kd_insertsize_metrics.txt 
   paste $SAMPLEID_kd_sample.txt $SAMPLEID_kd_hsmetrics.txt   $SAMPLEID_kd_insertsize_metrics.txt >  $SAMPLEID_kdTree_metrics.txt 
@@ -235,7 +276,6 @@ metricsMatrix(){
 
 }
 
->>>>>>> cb360481efb284d326bd9dc67f5a26dcc454b975
 
 ###########################################
 # MAKEKDTREE
