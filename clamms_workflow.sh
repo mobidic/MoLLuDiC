@@ -206,6 +206,8 @@ normalize(){
   debug "Clams directory is : \"$2\""
   debug "Sample name is : \"$3\""
  
+  info "Checking normalize's arguments ..."
+
   # - Check if Coverage Path exist 
   if [ ! -f ${COVERAGE_PATH} ]
   then
@@ -220,12 +222,11 @@ normalize(){
     help 
   fi 
 
-  if 
+  info "... Argument checking : done !"
+  info "Lauching normalize."
 
-  
   cd ${COVERAGE_PATH}
   ls *.coverage.nochr.bed | cut -d '.' -f 1 | while read SAMPLE ; do  ${CLAMMS_DIR}/normalize_coverage ${SAMPLE}.coverage.nochr.bed windows.bed >${SAMPLE}.norm.coverage.bed ;done
-}
 
 
 ###########################################
@@ -235,15 +236,11 @@ normalize(){
 #create metrics matrix for KD tree, all in one: (be careful, column position of picard metrics could change, better to do a grep instead)
 metricsMatrix(){
 
-  # - Command ./clams.sh metricsMatrix /PATH/TO/hs_metrics SAMPLE SAMPLEKD
+  # - Command ./clams.sh metricsMatrix /PATH/TO/hs_metrics SAMPLE
+
+
   HS_FOLDER=$1
   SAMPLEID=$2
-  SAMPLEIDKD=$3
-  SAMPLEID_KD_SAMPLE=$3
-  SAMPLEID_KD_HSMETRICS=$4
-  SAMPLEID_HS_METRICS=$5
-
-
   
   cd ${HS_FOLDER}
 
@@ -257,22 +254,22 @@ metricsMatrix(){
 
   #for 1 sample
   #how to get sample ID  argument?
-  echo "SAMPLE" > ${SAMPLEID_KD_SAMLE}.txt
-  echo ${SAMPLEID} >> ${SAMPLEID_KD_SAMPLE}.txt 
+  echo "SAMPLE" > ${SAMPLEID}_kd_sample.txt
+  echo ${SAMPLEID} >> ${SAMPLEID}_kd_sample.txt 
   #path to multiple metrics
-  grep -v "#" ${SAMPLEID_HS_METRICS}.txt | head -3 | tail -2 | cut -f51,42,38,21,10,52 > ${SAMPLEID_KD_HSMETRICS}.txt 
+  grep -v "#" ${SAMPLEID}_hs_metrics.txt | head -3 | tail -2 | cut -f51,42,38,21,10,52 > ${SAMPLEID}_kd_hsmetrics.txt 
   #path to insertsize metrics
-  grep -v "#" $SAMPLEID_insertsize_metrics.txt | head -3 | tail -2 | cut -f5 > $SAMPLEID_kd_insertsize_metrics.txt 
-  paste $SAMPLEID_kd_sample.txt $SAMPLEID_kd_hsmetrics.txt   $SAMPLEID_kd_insertsize_metrics.txt >  $SAMPLEID_kdTree_metrics.txt 
+  grep -v "#" ${SAMPLEID}_insertsize_metrics.txt | head -3 | tail -2 | cut -f5 > ${SAMPLEID}_kd_insertsize_metrics.txt 
+  paste ${SAMPLEID}_kd_sample.txt ${SAMPLEID}_kd_hsmetrics.txt   ${SAMPLEID}_kd_insertsize_metrics.txt >  ${SAMPLEID}_kdTree_metrics.txt 
   # $SAMPLEID_kdTree_metrics.txt a ecrire dans le répertoire kdTreeMetrics
 
   #head the file with parameter names
-  cat $SAMPLEID_kdTree_metrics.txt  > ALL_kdTreeMetrics.txt
+  cat ${SAMPLEID}_kdTree_metrics.txt  > ALL_kdTreeMetrics.txt
   #fill with the data (check if conversion of "," into "." is nedded)
   for i in *kdTree_metrics.txt; do t -1 $i | sed 's/,/./g' >> ALL_kdTreeMetrics.txt ; done
 
   #then move to répertoire kdTreeMetrics 
-  cp $SAMPLEID_kdTree_metrics.txt kdTreeMetricsDir/
+  cp ${SAMPLEID}_kdTree_metrics.txt kdTreeMetricsDir/
 
 }
 
