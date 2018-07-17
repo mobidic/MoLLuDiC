@@ -316,6 +316,29 @@ makekdtree(){
   KNN=$1 
   KD_OUT=$2
   
+  debug "makekdtree : KNN is  \"$1\""
+  debug "makekdtree : KD_OUT is \"$2\"" 
+
+  info "Checking makekdtree's arguments ..."
+
+  if [ ! -d ${KD_OUT} ]
+  then 
+    error "\"${KD_OUT}\" does not exist !"
+    help
+    # Rajouter une ligne pour créer le répertoire s'il n'est pas saisi en dur ? 
+  fi 
+
+  if ! [[ "${KNN}" =~ ^[0-9]+$ ]]
+  then 
+    error "\"${KNN}\" is not a correct value ! Must be an integer."
+    help 
+  fi 
+
+  info "... Argument checking : done !"
+
+  info "Launching KdTree RScript ..."
+
+  
   Rscript ~/PROJECTS/EXOMES/compute_kdTree.Rscript ${KNN} ALL_kdTreeMetrics.txt ${KD_OUT}
 
   #sort nns.txt for the next JOIN
@@ -323,6 +346,8 @@ makekdtree(){
   do 
     sort $i > ${i/txt/sort.txt}
   done
+
+  info "... KdTree RScript done !"
 }
 
 
