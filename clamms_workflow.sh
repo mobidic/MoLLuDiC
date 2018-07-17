@@ -70,23 +70,27 @@ log() {
 # -- Command : ./clamms_workflow.sh install /PATH/TO/Install
 
 install(){
-  debug "Installation PATH of clamms is : \"$1\""
-  info "Checking installation directory of clamms..."
+  debug "install : Installation PATH of clamms is : \"$1\""
+
+  info "install : Checking installation directory of clamms..."
+
   # - Check if /PATH/TO/Install exists else create directory
   if [ ! -d $1 ] 
   then 
-    warning "\"$1\" doens't exist. \"$1\" was created"
+    warning "\"$1\" does not exist. \"$1\" was created"
     mkdir $1
-  fi 
-  info "... Argument Checking : OK" 
+  fi
+  info "... Argument Checking : OK"
+
   info "Starting git clone of CLAMMS repo..."
   cd $1
   git clone https://github.com/rgcgithub/clamms.git
   cd clamms
   info "... Done"
+
   info "Lauching Make ..."
   make
-  "... Done"
+  info "... Done"
 }
 
 ###########################################################
@@ -97,10 +101,10 @@ install(){
 
 mapinstall(){
 
-  debug "Installation PATH of mapability is : \"$1\""
-  debug "BigWigToWig PATH is : \"$2\""
+  debug "mapinstall : Installation PATH of mapability is : \"$1\""
+  debug "mapinstall : BigWigToWig PATH is : \"$2\""
 
-  info "Checking arguments ..."
+  info "Checking mapinstall's arguments ..."
 
   # - Check if /PATH/TO/INSTALL exists else create directory
   if [ ! -d $1 ]
@@ -120,7 +124,7 @@ mapinstall(){
     error "\"$2\" is not bigWigToWig ! Please chose a correct PATH."
     help 
   fi 
-  info "... Arguments checking : OK"
+  info "... Arguments checking done"
   info "Installing Mapability ..."
   cd $1
   wget http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeMapability/wgEncodeCrgMapabilityAlign100mer.bigWig
@@ -146,8 +150,8 @@ windowsBed(){
   CLAMS_DIR=$1
   INSER_SIZE=$2
   
-  debug "Clams directory is : \"$1\""
-  debug "Inser size is : \"$2\""
+  debug "windowsBed : Clams directory is : \"$1\""
+  debug "windows Bed : Inser size is : \"$2\""
 
   info "Checking windowsBed's arguments..."
 
@@ -183,7 +187,7 @@ windowsBed(){
   chmod +x ${CLAMMS_DIR}/annotate_windows.sh
   ${CLAMMS_DIR}/annotate_windows.sh  ~/resources/hg19/S04380110_Regions_nochr.bed  ~/resources/hg19/ucsc.hg19.nochr.fasta  ~/PROJECTS/EXOMES/ressources/mappability.bed ${INSERT_SIZE} ${CLAMMS_DIR}/data/clamms_special_regions.bed > ~/PROJECTS/EXOMES/ressources/windows_nochr_S04380110_${INSERT_SIZE}pb.bed
 
-  info "... Done !"
+  info "... annotate_windoxs.sh done !"
 }
 
 
@@ -202,13 +206,13 @@ normalize(){
   CLAMS_DIR=$2
   SAMPLE=$3
 
-  debug "Coverage path is : \"$1\""
-  debug "Clams directory is : \"$2\""
-  debug "Sample name is : \"$3\""
+  debug "normalize : Coverage path is : \"$1\""
+  debug "normalize : Clams directory is : \"$2\""
+  debug "normalize : Sample name is : \"$3\""
  
   info "Checking normalize's arguments ..."
 
-  # - Check if Coverage Path exist 
+  # - Check if Coverage Path exists 
   if [ ! -f ${COVERAGE_PATH} ]
   then
     error "\"${COVERAGE_PATH}\" does not exist !"
@@ -223,10 +227,13 @@ normalize(){
   fi 
 
   info "... Argument checking : done !"
-  info "Lauching normalize."
+  info "Lauching normalize ..."
 
   cd ${COVERAGE_PATH}
   ls *.coverage.nochr.bed | cut -d '.' -f 1 | while read SAMPLE ; do  ${CLAMMS_DIR}/normalize_coverage ${SAMPLE}.coverage.nochr.bed windows.bed >${SAMPLE}.norm.coverage.bed ;done
+
+  info "... normalize Done !"
+}
 
 
 ###########################################
@@ -241,6 +248,21 @@ metricsMatrix(){
 
   HS_FOLDER=$1
   SAMPLEID=$2
+
+  debug "metricsMatrix : HS_FOLDER is : \"$1\""
+  debug "metricsMatrix : SAMPLEID is : \"$2\""
+
+  info "Checking metricsMatrix's arguments ..."
+
+  # - Check if HS_FOLDER exists 
+  if [ ! -d ${HS_FOLDER} ]
+  then 
+    error "\"${HS_FOLDER}\" does not exist !"
+    help 
+  fi 
+
+  info "... Argument checking : done !"
+  info "Launching metricsMatrix ..."
   
   cd ${HS_FOLDER}
 
@@ -271,6 +293,8 @@ metricsMatrix(){
   #then move to répertoire kdTreeMetrics 
   cp ${SAMPLEID}_kdTree_metrics.txt kdTreeMetricsDir/
 
+  info "... metricsMatrix done !"
+
 }
 
 
@@ -279,6 +303,9 @@ metricsMatrix(){
 ###########################################
 
 makekdtree(){
+
+  # - Command ./clams.sh makekdtree
+
   #ajouter en option le outputDir et corriger le Rscript pour ne traiter que le sample
 
   export KNN=50 #Variable à moduler en option 
