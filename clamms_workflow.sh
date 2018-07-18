@@ -70,22 +70,26 @@ log() {
 # -- Command : ./clamms_workflow.sh install /PATH/TO/Install
 
 install(){
-  debug "install : Installation PATH of clamms is : \"$1\""
+
+  CLAMMS_DIR=$1
+
+  debug "install : Installation PATH of clamms is : \"${CLAMMS_DIR}\""
 
   info "install : Checking installation directory of clamms..."
 
   # - Check if /PATH/TO/Install exists else create directory
-  if [ ! -d $1 ] 
+  if [ ! -d ${CLAMMS_DIR} ] 
   then 
-    warning "\"$1\" does not exist. \"$1\" was created"
-    mkdir $1
+    warning "\"${CLAMMS_DIR}\" does not exist. \"${CLAMMS_DIR}\" was created"
+    mkdir ${CLAMMS_DIR}
   fi
   info "... Argument Checking : OK"
 
   info "Starting git clone of CLAMMS repo..."
-  cd $1
+  cd ${CLAMMS_DIR}
   git clone https://github.com/rgcgithub/clamms.git
-  cd clamms
+  mv clamms/* .
+  rm -rf clamms
   info "... Done"
 
   info "Lauching Make ..."
@@ -97,38 +101,44 @@ install(){
 # MAPABILITY INSTALL - 1T
 ###########################################################
 
-# -- Command : ./clamms_workflow.sh mapinstall /PATH/TO/INSTALL /PATH/TO/BigWigToWig
+# -- Command : ./clamms_workflow.sh mapinstall /PATH/TO/CLAMMS_DIR /PATH/TO/BigWigToWig
 
 mapinstall(){
-
-  debug "mapinstall : Installation PATH of mapability is : \"$1\""
-  debug "mapinstall : BigWigToWig PATH is : \"$2\""
+  
+  CLAMMS_DIR=$1
+  INSTALLATION_PATH=${CLAMMS_DIR}/lib4clamms/hg19
+  BW2W_PATH=$2
+  
+  debug "mapinstall : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
+  debug "mapinstall : INSTALLATION_PATH of mapability is : \"${INSTALLATION_PATH}\""
+  debug "mapinstall : BW2W_PATH is : \"${BW2W_PATH}\""
 
   info "Checking mapinstall's arguments ..."
-
   # - Check if /PATH/TO/INSTALL exists else create directory
-  if [ ! -d $1 ]
+  if [ ! -d ${CLAMMS_DIR} ]
   then 
-    warning "\"$1\" doens't exist. \"$1\" was created"
-    mkdir $1
+    warning "\"${CLAMMS_DIR}\" doens't exist. \"${CLAMMS_DIR}\" was created"
+    mkdir ${CLAMMS_DIR}
   fi 
   # - Check if /PATH/TO/bigWigToWig exists
-  if [ ! -f $2 ]
+  if [ ! -f ${BW2W_PATH} ]
   then 
-    error "\"$2\" is not a correct PATH to BigWigToWig !"
+    error "\"${BW2W_PATH}\" is not a correct PATH to BigWigToWig !"
     help
   fi 
   # - Check if /PATH/TO/bigWigToWig is a PATH to the soft
-  if ! [[ "$2" =~ bigWigToWig$ ]]
+  if ! [[ "${BW2W_PATH}" =~ bigWigToWig$ ]]
   then 
-    error "\"$2\" is not bigWigToWig ! Please chose a correct PATH."
+    error "\"${BW2W_PATH}\" is not bigWigToWig ! Please chose a correct PATH."
     help 
   fi 
   info "... Arguments checking done"
+
   info "Installing Mapability ..."
-  cd $1
+  cd ${INSTALLATION_PATH}
+  # Refaire les répertoires de sortie
   wget http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeMapability/wgEncodeCrgMapabilityAlign100mer.bigWig
-  $2 wgEncodeCrgMapabilityAlign100mer.bigWig wgEncodeCrgMapabilityAlign100mer.wig
+  ${BW2W_PATH} wgEncodeCrgMapabilityAlign100mer.bigWig wgEncodeCrgMapabilityAlign100mer.wig
   grep -v '^#' wgEncodeCrgMapabilityAlign100mer.wig | sed 's/^chr//g' > ~/PROJECTS/EXOMES/ressources/mappability.bed
   info "... Done !"
 
@@ -147,24 +157,23 @@ mapinstall(){
 
 windowsBed(){
 
-  CLAMS_DIR=$1
-  INSER_SIZE=$2
+  CLAMMS_DIR=$1
+  INSERT_SIZE=$2
   
-  debug "windowsBed : Clams directory is : \"$1\""
-  debug "windows Bed : Inser size is : \"$2\""
+  debug "windowsBed : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
+  debug "windows Bed : INSERT_SIZE is : \"${INSERT_SIZE}\""
 
   info "Checking windowsBed's arguments..."
-
   # - Check if /PATH/TO/CLAMS exists
-  if [ ! -d $1 ]
+  if [ ! -d ${CLAMMS_DIR} ]
   then 
-    error "\"$1\" is not a correct path to clams directory"
+    error "\"${CLAMMS_DIR}\" is not a correct path to clams directory"
     help 
   fi 
   # - Check if /PATH/TO/annotate_windows.sh exists 
-  if [ ! -f "$1/annotate_windows.sh" ]
+  if [ ! -f "${CLAMMS_DIR}/annotate_windows.sh" ]
   then 
-    error "\"annotate_windows.sh\" in \"$1\" does not exist !"
+    error "\"annotate_windows.sh\" in \"${CLAMMS_DIR}\" does not exist !"
     help 
   fi 
   # - Check if /PATH/TO/data/clams_special_regions.bed exists 
@@ -185,6 +194,7 @@ windowsBed(){
   info "Launching annotate_windows.sh ..."
 
   chmod +x ${CLAMMS_DIR}/annotate_windows.sh
+  # Ajouter libraire en argument - Check variable MobiDL (_nochr.bed)
   ${CLAMMS_DIR}/annotate_windows.sh  ~/resources/hg19/S04380110_Regions_nochr.bed  ~/resources/hg19/ucsc.hg19.nochr.fasta  ~/PROJECTS/EXOMES/ressources/mappability.bed ${INSERT_SIZE} ${CLAMMS_DIR}/data/clamms_special_regions.bed > ~/PROJECTS/EXOMES/ressources/windows_nochr_S04380110_${INSERT_SIZE}pb.bed
 
   info "... annotate_windoxs.sh done !"
@@ -276,11 +286,13 @@ metricsMatrix(){
 
   #for 1 sample
   #how to get sample ID  argument?
+  ## TOUTES LES VARIABLES SONT A RECUP DANS MOBIDL
   echo "SAMPLE" > ${SAMPLEID}_kd_sample.txt
   echo ${SAMPLEID} >> ${SAMPLEID}_kd_sample.txt 
   #path to multiple metrics
   grep -v "#" ${SAMPLEID}_hs_metrics.txt | head -3 | tail -2 | cut -f51,42,38,21,10,52 > ${SAMPLEID}_kd_hsmetrics.txt 
   #path to insertsize metrics
+  # Sample ID insertsizer metrics .txt | sample id hs metrics .txt 
   grep -v "#" ${SAMPLEID}_insertsize_metrics.txt | head -3 | tail -2 | cut -f5 > ${SAMPLEID}_kd_insertsize_metrics.txt 
   paste ${SAMPLEID}_kd_sample.txt ${SAMPLEID}_kd_hsmetrics.txt   ${SAMPLEID}_kd_insertsize_metrics.txt >  ${SAMPLEID}_kdTree_metrics.txt 
   # $SAMPLEID_kdTree_metrics.txt a ecrire dans le répertoire kdTreeMetrics
