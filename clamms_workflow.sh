@@ -107,7 +107,7 @@ install() {
 mapinstall() {
   
   CLAMMS_DIR=$1
-  INSTALLATION_PATH=${CLAMMS_DIR}/lib4clamms/hg19
+  INSTALLATION_PATH=${CLAMMS_DIR}/lib4Clamms/hg19
   BW2W_PATH=$2
   
   debug "mapinstall : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
@@ -116,10 +116,12 @@ mapinstall() {
 
   info "Checking mapinstall's arguments ..."
   # - Check if /PATH/TO/INSTALL exists else create directory
-  if [ ! -d ${CLAMMS_DIR} ]
+  if [ ! -d ${INSTALLATION_PATH} ]
   then 
-    warning "\"${CLAMMS_DIR}\" doens't exist. \"${CLAMMS_DIR}\" was created"
+    warning "\"${INSTALLATION_PATH}\" doens't exist. \"${INSTALLATION_PATH}\" was created"
     mkdir ${CLAMMS_DIR}
+    mkdir ${CLAMMS_DIR}/lib4Clamms
+    mkdir ${CLAMMS_DIR}/lib4Clamms/hg19
   fi 
   # - Check if /PATH/TO/bigWigToWig exists
   if [ ! -f ${BW2W_PATH} ]
@@ -137,10 +139,9 @@ mapinstall() {
 
   info "Installing Mapability ..."
   cd ${INSTALLATION_PATH}
-  # Refaire les répertoires de sortie
   wget http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeMapability/wgEncodeCrgMapabilityAlign100mer.bigWig
   ${BW2W_PATH} wgEncodeCrgMapabilityAlign100mer.bigWig wgEncodeCrgMapabilityAlign100mer.wig
-  grep -v '^#' wgEncodeCrgMapabilityAlign100mer.wig | sed 's/^chr//g' > ~/PROJECTS/EXOMES/ressources/mappability.bed
+  grep -v '^#' wgEncodeCrgMapabilityAlign100mer.wig | sed 's/^chr//g' > mappability.bed
   info "... Done !"
 
 }
@@ -160,9 +161,19 @@ windowsBed(){
 
   CLAMMS_DIR=$1
   INSERT_SIZE=$2
+  INTERVALBEDFILE=$3
+  REFFASTA=$4
+  #REF = CLAMMS_DIR/lib4CLAMMS/hg19
+  CLAMMS_SPECIAL_REGIONS=$5
+  #CLAMMS_DIR/data
+  LIBRARY=$6
   
   debug "windowsBed : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
-  debug "windows Bed : INSERT_SIZE is : \"${INSERT_SIZE}\""
+  debug "windowsBed : INSERT_SIZE is : \"${INSERT_SIZE}\""
+  debug "windowsBed : INTERVALBEDFILE is : \"${INTERVALBEDFILE}\""
+  debug "windowsBed : REFFASTA is : \"${REFFASTA}\""
+  debug "windowsBed : CLAMMS_SPECIAL_REGIONS is : \"${CLAMMS_SPECIAL_REGIONS}\""
+  debug "windowsBed : LIBRARY is : \"${LIBRARY}\""
 
   info "Checking windowsBed's arguments..."
   # - Check if /PATH/TO/CLAMS exists
@@ -177,17 +188,40 @@ windowsBed(){
     error "\"annotate_windows.sh\" in \"${CLAMMS_DIR}\" does not exist !"
     help 
   fi 
-  # - Check if /PATH/TO/data/clams_special_regions.bed exists 
-  if [ ! -f "$1/data/clams_special_regions.bed" ]
+  # - Check if INSERT_SIZE >= 100s 
+  if [ ! ${INSERT_SIZE} -ge 100 ]
   then 
-    error "\"data/clams_special_regions.bed\" in \"$1\" does not exist !"
+    error "\"${INSERT_SIZE}\" have to be greater than 100 !"
     help 
   fi 
-
   # - Check if INSER_SIZE is an integer
-  if ! [[ "$2" =~ ^[0-9]+$ ]]
+  if ! [[ "${INSERT_SIZE}" =~ ^[0-9]+$ ]]
   then 
-    error "\"$2\" is not an integer !"
+    error "\"${INSERT_SIZE}\" is not an integer !"
+    help 
+  fi
+  # - Check if INTERVALBEDFILE exists
+  if [ ! -f ${INTERVALBEDFILE} ]
+  then 
+    error "\"${INTERVALBEDFILE}\" does not exist !"
+    help 
+  fi 
+  # - Check if REFFASTA exists
+  if [ ! -f ${REFFASTA} ]
+  then 
+    error "\"${REFFASTA}\" does not exist !"
+    help 
+  fi 
+  # - Check if CLAMMS_SPECIAL_REGIONS exists
+  if [ ! -f ${CLAMMS_SPECIAL_REGIONS} ]
+  then 
+    error "\"${CLAMMS_SPECIAL_REGIONS}\" does not exist !"
+    help
+  fi 
+  # - Check if LIBRARY exists 
+  if [ ! -f ${LIBRARY} ]
+  then 
+    error "\"${LIBRARY}\" does not exist !"
     help 
   fi 
 
@@ -196,7 +230,7 @@ windowsBed(){
 
   chmod +x ${CLAMMS_DIR}/annotate_windows.sh
   # Ajouter libraire en argument - Check variable MobiDL (_nochr.bed)
-  ${CLAMMS_DIR}/annotate_windows.sh  ~/resources/hg19/S04380110_Regions_nochr.bed  ~/resources/hg19/ucsc.hg19.nochr.fasta  ~/PROJECTS/EXOMES/ressources/mappability.bed ${INSERT_SIZE} ${CLAMMS_DIR}/data/clamms_special_regions.bed > ~/PROJECTS/EXOMES/ressources/windows_nochr_S04380110_${INSERT_SIZE}pb.bed
+  ${CLAMMS_DIR}/annotate_windows.sh ${INTERVALBEDFILE} ${REFFASTA}  ${CLAMMS_DIR}/lib4Clamms/hg19/mappability.bed ${INSERT_SIZE} ${CLAMMS_SPECIAL_REGIONS} > ${LIBRARY}/windowsBed/insertSize${INSERT_SIZE}/windows_nochr_S04380110_${INSERT_SIZE}pb.bed
 
   info "... annotate_windoxs.sh done !"
 }
@@ -209,17 +243,17 @@ windowsBed(){
 
 # -- After Samtools 
 
-normalize(){
+normalizeFS() {
 
   # - Command ./clams.sh normalize /PATH/TO/coverage /PATH/TO/clams_dir SAMPLE
 
   COVERAGE_PATH=$1
-  CLAMS_DIR=$2
-  SAMPLE=$3
+  CLAMMS_DIR=$2
+  SAMPLEID=$3
 
-  debug "normalize : Coverage path is : \"$1\""
-  debug "normalize : Clams directory is : \"$2\""
-  debug "normalize : Sample name is : \"$3\""
+  debug "normalize : COVERAGE_PATH is : \"${COVERAGE_PATH}\""
+  debug "normalize : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
+  debug "normalize : SAMPLEID name is : \"${SAMPLEID}\""
  
   info "Checking normalize's arguments ..."
 
@@ -241,9 +275,48 @@ normalize(){
   info "Lauching normalize ..."
 
   cd ${COVERAGE_PATH}
-  ls *.coverage.nochr.bed | cut -d '.' -f 1 | while read SAMPLE ; do  ${CLAMMS_DIR}/normalize_coverage ${SAMPLE}.coverage.nochr.bed windows.bed >${SAMPLE}.norm.coverage.bed ;done
+  ls *.coverage.nochr.bed | cut -d '.' -f 1 | while read SAMPLEID ; do  ${CLAMMS_DIR}/normalize_coverage ${SAMPLEID}.coverage.nochr.bed windows.bed > ${SAMPLEID}.norm.coverage.bed ;done
 
   info "... normalize Done !"
+}
+
+normalize(){
+
+  COVERAGE_PATH=$1
+  CLAMMS_DIR=$2
+  SAMPLEID=$3
+  CLAMMSCOVERAGEFILE=$4
+  WINDOWS_BED=$5
+
+  debug "normalize : COVERAGE_PATH is : \"${COVERAGE_PATH}\""
+  debug "normalize : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
+  debug "normalize : SAMPLEID name is : \"${SAMPLEID}\""
+ 
+  info "Checking normalize's arguments ..."
+
+  # - Check if Coverage Path exists 
+  if [ ! -f ${COVERAGE_PATH} ]
+  then
+    error "\"${COVERAGE_PATH}\" does not exist !"
+    help 
+  fi 
+  
+  # - Check 
+  if [ ! -d ${CLAMS_DIR} ]
+  then 
+    error "\"${CLAMS_DIR}\" does not exist ! "
+    help 
+  fi 
+
+  info "... Argument checking : done !"
+  info "Lauching normalize ..."
+
+  cd ${COVERAGE_PATH}
+  ${CLAMMS_DIR}/normalize_coverage ${CLAMMSCOVERAGEFILE} ${WINDOWS_BED} > ${SAMPLEID}.norm.coverage.bed
+
+  info "... normalize Done !"
+
+
 }
 
 
@@ -252,7 +325,7 @@ normalize(){
 ###########################################
 
 #create metrics matrix for KD tree, all in one: (be careful, column position of picard metrics could change, better to do a grep instead)
-metricsMatrix(){
+metricsMatrixFS(){
 
   # - Command ./clams.sh metricsMatrix /PATH/TO/hs_metrics SAMPLE
 
@@ -277,13 +350,13 @@ metricsMatrix(){
   
   cd ${HS_FOLDER}
 
-  for i in *hs_metrics.txt ; do 
-    echo "SAMPLE"> ${i/hs_metrics/kd_sample} ;
-    echo ${i/_hs_metrics.txt} >> ${i/hs_metrics/kd_sample}; 
-    grep -v "#" $i | head -3 | tail -2 | cut -f51,42,38,21,10,52 > ${i/hs_metrics/kd_hsmetrics} ;
-    grep -v "#" ${i/hs/insertsize} | head -3 | tail -2 | cut -f5 > ${i/hs/kd_insertsize} ;
-    paste ${i/hs_metrics/kd_sample}  ${i/hs_metrics/kd_hsmetrics} ${i/hs_/kd_insertsize_} > ${i/hs_/kdTree_}     ; 
-  done
+  #for i in *hs_metrics.txt ; do 
+  #  echo "SAMPLE"> ${i/hs_metrics/kd_sample} ;
+  #  echo ${i/_hs_metrics.txt} >> ${i/hs_metrics/kd_sample}; 
+  #  grep -v "#" $i | head -3 | tail -2 | cut -f51,42,38,21,10,52 > ${i/hs_metrics/kd_hsmetrics} ;
+  #  grep -v "#" ${i/hs/insertsize} | head -3 | tail -2 | cut -f5 > ${i/hs/kd_insertsize} ;
+  #  paste ${i/hs_metrics/kd_sample}  ${i/hs_metrics/kd_hsmetrics} ${i/hs_/kd_insertsize_} > ${i/hs_/kdTree_}     ; 
+  #done
 
   #for 1 sample
   #how to get sample ID  argument?
@@ -426,4 +499,19 @@ annotation(){
 if [ $1 == "install" ]
 then 
   install $2
+fi
+
+if [ $1 == "mapinstall" ]
+then 
+  mapinstall $2 $3
+fi 
+
+if [ $1 == "windowsBed" ]
+then 
+  windowsBed $2 $3 $4 $5 $6 $7
+fi
+
+if [ $1 == "normalizeFS" ]
+then 
+  normalizeFS $2 $3 $4
 fi
