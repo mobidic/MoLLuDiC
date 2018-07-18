@@ -1,4 +1,4 @@
-#! /usr/bin/bash
+#!/usr/bin/bash
 
 ###########################################################
 #
@@ -19,15 +19,16 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 
-VERSION= "0.0.1"
-VERBOSITY= 4
+VERSION="0.0.1"
+VERBOSITY=4
 
 
 ###########################################################
 # Help 
 ###########################################################
 
-help(){
+help() {
+  echo "Voici l'aide"
   exit 1
 }
 
@@ -54,12 +55,11 @@ debug() { log ${DEBUG} "${LIGHTRED}DEBUG${NC} : $1" ; }
 echoerr() { echo -e "$@" 1>&2 ; }
 
 log() {
-
-    if [ ${VERBOSITY} -ge $1 ]
-    then
-      echoerr "[`date +'%Y-%m-%d %H:%M:%S'`] - CromWrap version : ${VERSION} - $2"
-    fi
-  }
+  if [ ${VERBOSITY} -ge $1 ]
+  then
+    echoerr "[`date +'%Y-%m-%d %H:%M:%S'`] - MoLLuDiC version : ${VERSION} - $2"
+  fi
+}
 
 
 ###########################################################
@@ -69,10 +69,10 @@ log() {
 #Main steps for CNV calling by clamms (https://github.com/rgcgithub/clamms)
 # -- Command : ./clamms_workflow.sh install /PATH/TO/Install
 
-install(){
-
+install() {
+  
   CLAMMS_DIR=$1
-
+  
   debug "install : Installation PATH of clamms is : \"${CLAMMS_DIR}\""
 
   info "install : Checking installation directory of clamms..."
@@ -82,6 +82,7 @@ install(){
   then 
     warning "\"${CLAMMS_DIR}\" does not exist. \"${CLAMMS_DIR}\" was created"
     mkdir ${CLAMMS_DIR}
+    help
   fi
   info "... Argument Checking : OK"
 
@@ -103,7 +104,7 @@ install(){
 
 # -- Command : ./clamms_workflow.sh mapinstall /PATH/TO/CLAMMS_DIR /PATH/TO/BigWigToWig
 
-mapinstall(){
+mapinstall() {
   
   CLAMMS_DIR=$1
   INSTALLATION_PATH=${CLAMMS_DIR}/lib4clamms/hg19
@@ -421,3 +422,8 @@ annotation(){
 ###########################################################
 # MAIN 
 ###########################################################
+
+if [ $1 == "install" ]
+then 
+  install $2
+fi
