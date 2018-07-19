@@ -176,58 +176,75 @@ windowsBed(){
   debug "windowsBed : LIBRARY is : \"${LIBRARY}\""
 
   info "Checking windowsBed's arguments..."
-  # - Check if /PATH/TO/CLAMS exists
+  # - If exists
+  ## - Check if /PATH/TO/CLAMS exists
   if [ ! -d ${CLAMMS_DIR} ]
   then 
     error "\"${CLAMMS_DIR}\" is not a correct path to clams directory"
     help 
   fi 
-  # - Check if /PATH/TO/annotate_windows.sh exists 
+  ## - Check if /PATH/TO/annotate_windows.sh exists 
   if [ ! -f "${CLAMMS_DIR}/annotate_windows.sh" ]
   then 
     error "\"annotate_windows.sh\" in \"${CLAMMS_DIR}\" does not exist !"
     help 
   fi 
-  # - Check if INSERT_SIZE >= 100s 
+  ## - Check if INSERT_SIZE >= 100s 
   if [ ! ${INSERT_SIZE} -ge 100 ]
   then 
     error "\"${INSERT_SIZE}\" have to be greater than 100 !"
     help 
   fi 
-  # - Check if INSER_SIZE is an integer
+  ## - Check if INSER_SIZE is an integer
   if ! [[ "${INSERT_SIZE}" =~ ^[0-9]+$ ]]
   then 
     error "\"${INSERT_SIZE}\" is not an integer !"
     help 
   fi
-  # - Check if INTERVALBEDFILE exists
+  ## - Check if INTERVALBEDFILE exists
   if [ ! -f ${INTERVALBEDFILE} ]
   then 
     error "\"${INTERVALBEDFILE}\" does not exist !"
     help 
   fi 
-  # - Check if REFFASTA exists
+  ## - Check if REFFASTA exists
   if [ ! -f ${REFFASTA} ]
   then 
     error "\"${REFFASTA}\" does not exist !"
     help 
   fi 
-  # - Check if CLAMMS_SPECIAL_REGIONS exists
+  ## - Check if CLAMMS_SPECIAL_REGIONS exists
   if [ ! -f ${CLAMMS_SPECIAL_REGIONS} ]
   then 
     error "\"${CLAMMS_SPECIAL_REGIONS}\" does not exist !"
     help
   fi 
-  # - Check if LIBRARY exists 
+  ## - Check if LIBRARY exists 
   if [ ! -f ${LIBRARY} ]
   then 
     error "\"${LIBRARY}\" does not exist !"
     help 
+  fi
+
+  # - Extension checking
+  
+  if [[ ${INTERVALBEDFILE##\.} != "bed" ]]
+  then 
+    error "\"${INTERVALBEDFILE}\" must be .bed file !"
   fi 
 
-  info "... Argument checking : done !"
-  info "Launching annotate_windows.sh ..."
+  if [[ ${REFFASTA##\.} != "fa" ]]
+  then
+    error "\"${REFFASTA}\" must be .fa file !"
+  fi 
 
+  if [[ ${CLAMMS_SPECIAL_REGIONS##\.} != "bed" ]]
+  then 
+    error "\"${CLAMMS_SPECIAL_REGIONS}\" must be .bed file !"
+  fi 
+  info "... Argument checking : done !"
+
+  info "Launching annotate_windows.sh ..."
   chmod +x ${CLAMMS_DIR}/annotate_windows.sh
   # Ajouter libraire en argument - Check variable MobiDL (_nochr.bed)
   ${CLAMMS_DIR}/annotate_windows.sh ${INTERVALBEDFILE} ${REFFASTA}  ${CLAMMS_DIR}/lib4Clamms/hg19/mappability.bed ${INSERT_SIZE} ${CLAMMS_SPECIAL_REGIONS} > ${LIBRARY}/windowsBed/insertSize${INSERT_SIZE}/windows_nochr_S04380110_${INSERT_SIZE}pb.bed
@@ -293,24 +310,33 @@ normalize(){
   debug "normalize : SAMPLEID name is : \"${SAMPLEID}\""
  
   info "Checking normalize's arguments ..."
-
-  # - Check if Coverage Path exists 
+  # - If exists
+  ## - Check if Coverage Path exists 
   if [ ! -f ${COVERAGE_PATH} ]
   then
     error "\"${COVERAGE_PATH}\" does not exist !"
     help 
-  fi 
-  
-  # - Check 
+  fi
+  ## - Check 
   if [ ! -d ${CLAMS_DIR} ]
   then 
     error "\"${CLAMS_DIR}\" does not exist ! "
     help 
   fi 
-
+  
+  # - Extension checking 
+  if [[ ${CLAMMSCOVERAGEFILE##\.} != "bed" ]]
+  then 
+    error "\"${CLAMMSCOVERAGEFILE}\" must be .bed file !"
+  fi 
+ 
+  if [[ ${WINDOWS_BED##\.} != "bed" ]]
+  then
+    error "\"${WINDOWS_BED}\" must be .bed file !"
   info "... Argument checking : done !"
-  info "Lauching normalize ..."
+  fi
 
+  info "Lauching normalize ..."
   cd ${COVERAGE_PATH}
   ${CLAMMS_DIR}/normalize_coverage ${CLAMMSCOVERAGEFILE} ${WINDOWS_BED} > ${SAMPLEID}.norm.coverage.bed
 
@@ -331,7 +357,62 @@ metricsMatrixFS(){
 
 
   HS_FOLDER=$1
+
+  debug "metricsMatrixFS : HS_FOLDER is : \"$1\""
+
+  info "Checking metricsMatrixFS' arguments ..."
+
+  # - Check if HS_FOLDER exists 
+  if [ ! -d ${HS_FOLDER} ]
+  then 
+    error "\"${HS_FOLDER}\" does not exist !"
+    help 
+  fi 
+
+  info "... Argument checking : done !"
+  info "Launching metricsMatrixFS ..."
+  
+  cd ${HS_FOLDER}
+  ## TOUTES LES VARIABLES SONT A RECUP DANS MOBIDL
+  for SAMPLEID in *hs_metrics.txt
+  do 
+    echo "SAMPLE" > ${SAMPLEID}_kd_sample.txt
+    echo ${SAMPLEID} >> ${SAMPLEID}_kd_sample.txt 
+    #path to multiple metrics
+    grep -v "#" ${SAMPLEID}_hs_metrics.txt | head -3 | tail -2 | cut -f51,42,38,21,10,52 > ${SAMPLEID}_kd_hsmetrics.txt 
+    #path to insertsize metrics
+    # Sample ID insertsizer metrics .txt | sample id hs metrics .txt 
+    grep -v "#" ${SAMPLEID}_insertsize_metrics.txt | head -3 | tail -2 | cut -f5 > ${SAMPLEID}_kd_insertsize_metrics.txt 
+    paste ${SAMPLEID}_kd_sample.txt ${SAMPLEID}_kd_hsmetrics.txt   ${SAMPLEID}_kd_insertsize_metrics.txt >  ${SAMPLEID}_kdTree_metrics.txt 
+    # $SAMPLEID_kdTree_metrics.txt a ecrire dans le répertoire kdTreeMetrics
+  done
+
+  #head the file with parameter names
+  #cat ${SAMPLEID}_kdTree_metrics.txt  > ALL_kdTreeMetrics.txt
+  #fill with the data (check if conversion of "," into "." is nedded)
+  for i in *kdTree_metrics.txt; do t -1 $i | sed 's/,/./g' >> ALL_kdTreeMetrics.txt ; done
+
+  #then move to répertoire kdTreeMetrics 
+  cp ${SAMPLEID}_kdTree_metrics.txt kdTreeMetricsDir/
+
+  info "... metricsMatrixFS done !"
+
+
+  #for i in *hs_metrics.txt ; do 
+  #  echo "SAMPLE"> ${i/hs_metrics/kd_sample} ;
+  #  echo ${i/_hs_metrics.txt} >> ${i/hs_metrics/kd_sample}; 
+  #  grep -v "#" $i | head -3 | tail -2 | cut -f51,42,38,21,10,52 > ${i/hs_metrics/kd_hsmetrics} ;
+  #  grep -v "#" ${i/hs/insertsize} | head -3 | tail -2 | cut -f5 > ${i/hs/kd_insertsize} ;
+  #  paste ${i/hs_metrics/kd_sample}  ${i/hs_metrics/kd_hsmetrics} ${i/hs_/kd_insertsize_} > ${i/hs_/kdTree_}     ; 
+  #done
+}
+
+metricsMatrix() {
+  
+  HS_FOLDER=$1
   SAMPLEID=$2
+  HSMETRICSTXT=$3
+  INSERT_SIZE_METRICS_TXT=$4
 
   debug "metricsMatrix : HS_FOLDER is : \"$1\""
   debug "metricsMatrix : SAMPLEID is : \"$2\""
@@ -349,25 +430,14 @@ metricsMatrixFS(){
   info "Launching metricsMatrix ..."
   
   cd ${HS_FOLDER}
-
-  #for i in *hs_metrics.txt ; do 
-  #  echo "SAMPLE"> ${i/hs_metrics/kd_sample} ;
-  #  echo ${i/_hs_metrics.txt} >> ${i/hs_metrics/kd_sample}; 
-  #  grep -v "#" $i | head -3 | tail -2 | cut -f51,42,38,21,10,52 > ${i/hs_metrics/kd_hsmetrics} ;
-  #  grep -v "#" ${i/hs/insertsize} | head -3 | tail -2 | cut -f5 > ${i/hs/kd_insertsize} ;
-  #  paste ${i/hs_metrics/kd_sample}  ${i/hs_metrics/kd_hsmetrics} ${i/hs_/kd_insertsize_} > ${i/hs_/kdTree_}     ; 
-  #done
-
-  #for 1 sample
-  #how to get sample ID  argument?
   ## TOUTES LES VARIABLES SONT A RECUP DANS MOBIDL
   echo "SAMPLE" > ${SAMPLEID}_kd_sample.txt
   echo ${SAMPLEID} >> ${SAMPLEID}_kd_sample.txt 
   #path to multiple metrics
-  grep -v "#" ${SAMPLEID}_hs_metrics.txt | head -3 | tail -2 | cut -f51,42,38,21,10,52 > ${SAMPLEID}_kd_hsmetrics.txt 
+  grep -v "#" ${HSMETRICSTXT} | head -3 | tail -2 | cut -f51,42,38,21,10,52 > ${SAMPLEID}_kd_hsmetrics.txt 
   #path to insertsize metrics
   # Sample ID insertsizer metrics .txt | sample id hs metrics .txt 
-  grep -v "#" ${SAMPLEID}_insertsize_metrics.txt | head -3 | tail -2 | cut -f5 > ${SAMPLEID}_kd_insertsize_metrics.txt 
+  grep -v "#" ${INSERT_SIZE_METRICS_TXT} | head -3 | tail -2 | cut -f5 > ${SAMPLEID}_kd_insertsize_metrics.txt 
   paste ${SAMPLEID}_kd_sample.txt ${SAMPLEID}_kd_hsmetrics.txt   ${SAMPLEID}_kd_insertsize_metrics.txt >  ${SAMPLEID}_kdTree_metrics.txt 
   # $SAMPLEID_kdTree_metrics.txt a ecrire dans le répertoire kdTreeMetrics
 
