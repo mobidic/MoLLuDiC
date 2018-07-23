@@ -252,10 +252,10 @@ windowsBed(){
     echo "\"${LIBRARY}/windowsBeds/insertSize${INSERT_SIZE}\" does not exist but was created !  "
     mkdir ${LIBRARY}/windowsBeds/insertSize${INSERT_SIZE}
   fi 
-
-  # Ajouter libraire en argument - Check variable MobiDL (_nochr.bed)
+  # - Sort INTERVALBEDFILE and sed chr column of the resulting file
+  sort -k1,1 -2,2n ${INTERVALBEDFILE} | sed 's/^chr//g'
+  # - Run annotate_windows
   ${CLAMMS_DIR}/annotate_windows.sh ${INTERVALBEDFILE} ${REFFASTA}  ${CLAMMS_DIR}/lib4Clamms/hg19/mappability.bed ${INSERT_SIZE} ${CLAMMS_SPECIAL_REGIONS} > ${LIBRARY}/windowsBeds/insertSize${INSERT_SIZE}/windows_nochr_${INSERT_SIZE}pb.bed
-
   info "... annotate_windows.sh done !"
 }
 
