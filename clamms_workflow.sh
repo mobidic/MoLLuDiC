@@ -227,17 +227,17 @@ windowsBed() {
 
   # - Extension checking
   
-  if [[ ${INTERVALBEDFILE##\.} != "bed" ]]
+  if [[ ${INTERVALBEDFILE##*\.} != "bed" ]]
   then 
     error "\"${INTERVALBEDFILE}\" must be .bed file !"
   fi 
 
-  if [[ ${REFFASTA##\.} != "fa" ]]
+  if [[ ${REFFASTA##*\.} != "fa" ]]
   then
     error "\"${REFFASTA}\" must be .fa file !"
   fi 
 
-  if [[ ${CLAMMS_SPECIAL_REGIONS##\.} != "bed" ]]
+  if [[ ${CLAMMS_SPECIAL_REGIONS##*\.} != "bed" ]]
   then 
     error "\"${CLAMMS_SPECIAL_REGIONS}\" must be .bed file !"
   fi 
@@ -253,6 +253,10 @@ windowsBed() {
   fi 
   # - Sort INTERVALBEDFILE and sed chr column of the resulting file
   sort -k1,1 -k2,2n ${INTERVALBEDFILE} | sed 's/^chr//g'> ${LIBRARY}/interval_sort_nochr.bed
+
+  #debug 		  
+  CLAMMS_DIR=$1
+
   # - Run annotate_windows
   ${CLAMMS_DIR}/annotate_windows.sh ${LIBRARY}/interval_sort_nochr.bed ${REFFASTA} ${CLAMMS_DIR}/lib4Clamms/hg19/mappability.bed ${INSERT_SIZE} ${CLAMMS_SPECIAL_REGIONS} > ${LIBRARY}/windowsBeds/insertSize${INSERT_SIZE}/windows_nochr_${INSERT_SIZE}pb.bed
   info "... annotate_windows.sh done !"
@@ -331,12 +335,12 @@ normalize(){
   fi 
   
   # - Extension checking 
-  if [[ ${CLAMMSCOVERAGEFILE##\.} != "bed" ]]
+  if [[ ${CLAMMSCOVERAGEFILE##*\.} != "bed" ]]
   then 
     error "\"${CLAMMSCOVERAGEFILE}\" must be .bed file !"
   fi 
  
-  if [[ ${WINDOWS_BED##\.} != "bed" ]]
+  if [[ ${WINDOWS_BED##*\.} != "bed" ]]
   then
     error "\"${WINDOWS_BED}\" must be .bed file !"
   info "... Argument checking : done !"
