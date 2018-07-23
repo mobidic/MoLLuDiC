@@ -220,7 +220,7 @@ windowsBed(){
     help
   fi 
   ## - Check if LIBRARY exists 
-  if [ ! -f ${LIBRARY} ]
+  if [ ! -d ${LIBRARY} ]
   then 
     error "\"${LIBRARY}\" does not exist !"
     help 
@@ -247,7 +247,7 @@ windowsBed(){
   info "Launching annotate_windows.sh ..."
   chmod +x ${CLAMMS_DIR}/annotate_windows.sh
   # Ajouter libraire en argument - Check variable MobiDL (_nochr.bed)
-  ${CLAMMS_DIR}/annotate_windows.sh ${INTERVALBEDFILE} ${REFFASTA}  ${CLAMMS_DIR}/lib4Clamms/hg19/mappability.bed ${INSERT_SIZE} ${CLAMMS_SPECIAL_REGIONS} > ${LIBRARY}/windowsBed/insertSize${INSERT_SIZE}/windows_nochr_S04380110_${INSERT_SIZE}pb.bed
+  ${CLAMMS_DIR}/annotate_windows.sh ${INTERVALBEDFILE} ${REFFASTA}  ${CLAMMS_DIR}/lib4Clamms/hg19/mappability.bed ${INSERT_SIZE} ${CLAMMS_SPECIAL_REGIONS} > ${LIBRARY}/windowsBed/insertSize${INSERT_SIZE}/windows_nochr_${INSERT_SIZE}pb.bed
 
   info "... annotate_windoxs.sh done !"
 }
