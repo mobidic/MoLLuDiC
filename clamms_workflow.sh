@@ -150,14 +150,13 @@ mapinstall() {
 ###########################################################
 # CREATE WINDOWS BED - 1T
 ###########################################################
-
-# -- Command : ./clamms_workflow.sh windowsBed /PATH/TO/annotate_windows.sh INSER_SIZE
+# -- Command : ./clamms_workflow.sh windowsBed CLAMMS_DIR INSERT_SIZE INTERVALBEDFILE REFFASTA CLAMMS_SPECIAL_REGIONS LIBRARY
 
 #A faire tourner avec "chr", enlever "chr" en sortie du windows.bed
 #le github préconise de faire tourner sans le "chr" => prevoir un genome fasta sans chr
 #pour l'insert size prevoir un peu plus long que le fragment size ex: 200pb -> 250pb
 
-windowsBed(){
+windowsBed() {
 
   CLAMMS_DIR=$1
   INSERT_SIZE=$2
@@ -253,9 +252,9 @@ windowsBed(){
     mkdir ${LIBRARY}/windowsBeds/insertSize${INSERT_SIZE}
   fi 
   # - Sort INTERVALBEDFILE and sed chr column of the resulting file
-  sort -k1,1 -2,2n ${INTERVALBEDFILE} | sed 's/^chr//g'
+  sort -k1,1 -k2,2n ${INTERVALBEDFILE} | sed 's/^chr//g'> ${LIBRARY}/interval_sort_nochr.bed
   # - Run annotate_windows
-  ${CLAMMS_DIR}/annotate_windows.sh ${INTERVALBEDFILE} ${REFFASTA}  ${CLAMMS_DIR}/lib4Clamms/hg19/mappability.bed ${INSERT_SIZE} ${CLAMMS_SPECIAL_REGIONS} > ${LIBRARY}/windowsBeds/insertSize${INSERT_SIZE}/windows_nochr_${INSERT_SIZE}pb.bed
+  ${CLAMMS_DIR}/annotate_windows.sh ${LIBRARY}/interval_sort_nochr.bed ${REFFASTA} ${CLAMMS_DIR}/lib4Clamms/hg19/mappability.bed ${INSERT_SIZE} ${CLAMMS_SPECIAL_REGIONS} > ${LIBRARY}/windowsBeds/insertSize${INSERT_SIZE}/windows_nochr_${INSERT_SIZE}pb.bed
   info "... annotate_windows.sh done !"
 }
 
