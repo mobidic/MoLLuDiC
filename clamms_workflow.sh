@@ -247,7 +247,7 @@ windowsBed(){
   info "Launching annotate_windows.sh ..."
   chmod +x ${CLAMMS_DIR}/annotate_windows.sh
   # - Mkdir if insertSize${INSERT_SIZE} does not exist
-  if [ -d ${LIBRARY}/windowsBeds/insertSize${INSERT_SIZE} ]
+  if [ ! -d ${LIBRARY}/windowsBeds/insertSize${INSERT_SIZE} ]
   then 
     echo "\"${LIBRARY}/windowsBeds/insertSize${INSERT_SIZE}\" does not exist but was created !  "
     mkdir ${LIBRARY}/windowsBeds/insertSize${INSERT_SIZE}
@@ -256,7 +256,7 @@ windowsBed(){
   # Ajouter libraire en argument - Check variable MobiDL (_nochr.bed)
   ${CLAMMS_DIR}/annotate_windows.sh ${INTERVALBEDFILE} ${REFFASTA}  ${CLAMMS_DIR}/lib4Clamms/hg19/mappability.bed ${INSERT_SIZE} ${CLAMMS_SPECIAL_REGIONS} > ${LIBRARY}/windowsBeds/insertSize${INSERT_SIZE}/windows_nochr_${INSERT_SIZE}pb.bed
 
-  info "... annotate_windoxs.sh done !"
+  info "... annotate_windows.sh done !"
 }
 
 
