@@ -563,6 +563,7 @@ makekdtree(){
   KNN=$3 
   ALL_TREE=$4
   KD_OUT=$5
+  FROM_SCRATCH=$6
   
   debug "makekdtree : KNN is  \"$1\""
   debug "makekdtree : KD_OUT is \"$2\"" 
@@ -600,12 +601,18 @@ makekdtree(){
     help 
   fi 
 
+  if [[ (${FROM_SCRATCH} != "fromscratch") && (${FROM_SCRATCH} != "") ]]
+  then 
+    error "\"${FROM_SCRATCH}\" is not correct. Please enter \"fromscratch\" if it is the first time you run this script or nothing if it is not."
+    help 
+  fi 
+
   info "... Argument checking : done !"
 
   info "Launching KdTree RScript ..."
 
   
-  ${RSCRIPT} ${RSCRIPT_FILE} ${KNN} ${ALL_TREE} ${KD_OUT}
+  ${RSCRIPT} ${RSCRIPT_FILE} ${KNN} ${ALL_TREE} ${KD_OUT} ${FROM_SCRATCH}
 
   #sort nns.txt for the next JOIN
   for i in *.${KNN}nns.txt
