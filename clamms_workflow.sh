@@ -553,21 +553,21 @@ makekdtree(){
   RSCRIPT_FILE=$2
   KNN=$3 
   ALL_TREE=$4
-  KD_OUT=$5
+  LIBRARY_DIR=$5
   FROM_SCRATCH=$6
   
   debug "makekdtree : RSCRIPT is : \"${RSCRIPT}\""
   debug "makekdtree : RSCRIPT_FILE is : \"${RSCRIPT_FILE}\"" 
   debug "makekdtree : KNN is : \"${KNN}\""
   debug "makekdtree : ALL_TREE is : \"${ALL_TREE}\""
-  debug "makekdtree : KD_OUT is : \"${KD_OUT}\""
+  debug "makekdtree : KD_OUT is : \"${LIBRARY_DIR}\""
   debug "makekdtree : FROM_SCRATCH is : \"${FROM_SCRATCH}\""
 
   info "Checking makekdtree's arguments ..."
 
-  if [ ! -d ${KD_OUT} ]
+  if [ ! -d ${LIBRARY_DIR} ]
   then 
-    error "\"${KD_OUT}\" does not exist !"
+    error "\"${LIBRARY_DIR}\" does not exist !"
     help
     # Rajouter une ligne pour créer le répertoire s'il n'est pas saisi en dur ? 
   fi 
@@ -607,10 +607,10 @@ makekdtree(){
   info "Launching KdTree RScript ..."
 
   
-  ${RSCRIPT} ${RSCRIPT_FILE} ${KNN} ${ALL_TREE} ${KD_OUT} ${FROM_SCRATCH}
+  ${RSCRIPT} ${RSCRIPT_FILE} ${KNN} ${ALL_TREE} ${LIBRARY_DIR}projects/all/kdTreeMetrics/ ${FROM_SCRATCH}
 
   #sort nns.txt for the next JOIN
-  for i in *.${KNN}nns.txt
+  for i in ${LIBRARY_DIR}projects/all/kdTreeMetrics/*.${KNN}nns.txt
   do 
     sort $i > ${i/txt/sort.txt}
   done
@@ -624,23 +624,58 @@ makekdtree(){
 ############################################
 
 cnvCalling(){
-  #determine sex  for each sample
-  ls *.norm.cov.bed | while read FILE; do SAMPLE=`echo "$FILE" | cut -d '.' -f 1` ; echo -e -n "$SAMPLE\t$FILE\t" ;  grep "Y" $FILE | awk '{ x += $4; n++; } END { if (x/n >= 0.1) print "M"; else print "F"; }' ; done > sample.file.sex.txt
-  #include absolute path
-  ls *.norm.cov.bed | while read FILE; do SAMPLE=`echo "$FILE" | cut -d '.' -f 1` ; echo -e -n "$SAMPLE\t$PWD/$FILE\t" ;  grep "Y" $FILE | awk '{ x += $4; n++; } END { if (x/n >= 0.1) print "M"; else print "F"; }' ; done > sample.file.sex.txt
+  
 
-  #include absolute path and sort
-  ls *.norm.cov.bed |sort | while read FILE; do SAMPLE=`echo "$FILE" | cut -d '.' -f 1` ; echo -e -n "$SAMPLE\t$PWD/$FILE\t" ;  grep "Y" $FILE | awk '{ x += $4; n++; } END { if (x/n >= 0.1) print "M"; else print "F"; }' ; done > sample.file.sex.sort.txt
+  CLAMM_DIR=$1
+  LIBRARY_DIR=$2
+  SAMPLEID=$3
+  MUM=$4
+  DAD=$5
+  FILE=$6
+  SEX=$7
+  LIST_KDTREE=$8
+  WINDOWS_BED=$9
+  KNN=$10
 
-  #sort sample sex file for the next JOIN
-  sort sample.file.sex.txt > sample.file.sex.sort.txt
+  debug "cnvCalling : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
+  debug "cnvCalling : LIBRARY_DIR is :\"${LIBRARY_DIR}\""
+  debug "cnvCalling : SAMPLEID is : \"${SAMPLEID}\""
+  debug "cnvCalling : MUM is : \"${MUM}\""
+  debug "cnvCalling : DAD is \"${DAD}\""
+  debug "cnvCalling : FILE is : \"${FILE}\""
+  debug "cnvCalling : SEX is : \"${SEX}\""
+  debug "cnvCalling : LIST_KDTREE is : \"${LIST_KDTREE}\""
+  debug "cnvCalling : WINDOWS_BED is : \"${WINDOWS_BED}\""
+  debug "cnvCalling : KNN is : \"${KNN}\""
 
-  #same call excluding family with grep with argument $FAMILY_GREP, here for the example B00IX1C and B00IX1B, with nochr
-  ls *.norm.coverage.nochr.bed | cut -d '.' -f 1 | while read SAMPLE; do  SEX=`echo "$SAMPLE" | join - sample.file.sex.sort.nochr.txt | tr ' ' '\t' | cut -f 3` ; join ../../$SAMPLE.${KNN}nns.sort.txt  sample.file.sex.sort.nochr.txt | tr ' ' '\t' | cut -f 2- > $SAMPLE.${KNN}nns.ref.panel.sex.txt; grep -vE "$FAMILY_GREP" $SAMPLE.${KNN}nns.ref.panel.sex.txt > $SAMPLE.${KNN}nns.ref.panel.sex.familyExcluded.txt    ; $CLAMMS_DIR/fit_models $SAMPLE.${KNN}nns.ref.panel.sex.familyExcluded.txt ../windows_V6_S07604514_nochr_MERGE.bed >$SAMPLE.models.bed ; $CLAMMS_DIR/call_cnv $SAMPLE.norm.coverage.nochr.bed $SAMPLE.models.bed --sex $SEX >$SAMPLE.cnv.bed ;    done
+  ls ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/*.norm.coverage.bed |sort | while read FILE
+  do 
+    SAMPLE=`echo "${FILE}" | cut -d '.' -f 1`
+    echo -e -n "${SAMPLEID}\t${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${FILE}\t"
+    grep "Y" ${FILE} | awk '{ x += $4; n++; } END { if (x/n >= 0.1) print "M"; else print "F"; }'
+  done > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.file.sex.sort.txt
 
-  #same call for solo without family grep  with nochr
-  ls *.norm.coverage.nochr.bed | cut -d '.' -f 1 | while read SAMPLE; do  SEX=`echo "$SAMPLE" | join - sample.file.sex.sort.nochr.txt | tr ' ' '\t' | cut -f 3` ; join ../../$SAMPLE.${KNN}nns.sort.txt  sample.file.sex.sort.nochr.txt | tr ' ' '\t' | cut -f 2- > $SAMPLE.${KNN}nns.ref.panel.sex.txt;  $CLAMMS_DIR/fit_models $SAMPLE.${KNN}nns.ref.panel.sex.txt ../windows_V6_S07604514_nochr_MERGE.bed >$SAMPLE.models.bed ; $CLAMMS_DIR/call_cnv $SAMPLE.norm.coverage.nochr.bed $SAMPLE.models.bed --sex $SEX >$SAMPLE.cnv.bed ;    done
-
+  if [[ (${DAD} == "") || (${MUM} == "") ]]
+  then 
+    #same call for solo without family grep  with nochr
+    ls ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/*.norm.coverage.nochr.bed | cut -d '.' -f 1 | while read SAMPLE
+    do  
+      SEX=`echo "${SAMPLEID}" | join - ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.file.sex.sort.nochr.txt | tr ' ' '\t' | cut -f 3`
+      join ${LIST_KDTREE} ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.file.sex.sort.txt | tr ' ' '\t' | cut -f 2- > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.${KNN}nns.ref.panel.sex.txt
+      ${CLAMMS_DIR}/fit_models ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.${KNN}nns.ref.panel.sex.txt ${WINDOWS_BED} > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.models.bed
+      ${CLAMMS_DIR}/call_cnv ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.norm.coverage.bed ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.models.bed --sex ${SEX} > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.cnv.bed 
+    done
+  else 
+    #same call excluding family with grep with argument $FAMILY_GREP, here for the example B00IX1C and B00IX1B, with nochr
+    ls ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/*.norm.coverage.bed | cut -d '.' -f 1 | while read SAMPLE
+    do  
+      SEX=`echo "${SAMPLEID}" | join - ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.file.sex.sort.txt | tr ' ' '\t' | cut -f 3`
+      join ${LIST_KDTREE} ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.file.sex.sort.txt | tr ' ' '\t' | cut -f 2- > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.${KNN}nns.ref.panel.sex.txt
+      grep -vE "${MUM}" ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.${KNN}nns.ref.panel.sex.txt | grep -vE "${DAD}" >${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.${KNN}nns.ref.panel.sex.familyExcluded.txt
+      ${CLAMMS_DIR}/fit_models ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.${KNN}nns.ref.panel.sex.familyExcluded.txt ${WINDOWS_BED} > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.models.bed
+      ${CLAMMS_DIR}/call_cnv ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.norm.coverage.bed ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.models.bed --sex ${SEX} > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.cnv.bed
+    done
+  fi 
 
 }
 
@@ -650,24 +685,29 @@ cnvCalling(){
 ############################################
 
 annotation(){
-  export CI=Sample_name_du_CI
-  export DAD=Sample_name_du_pere
-  export MUM=Sample_name_du_mere
+
+  export CI=$1 #Sample_name_du_CI
+  export DAD=$2 #Sample_name_du_pere
+  export MUM=$3 #Sample_name_du_mere
+  BEDTOOLS_PATH=$4
+  HGBED=$5 #/home/puce/resources/hg19/gene_annot_hg19_final.bed annotation.bed
+  HEADER_FILE=$6 #~/PROJECTS/EXOMES/header.annotated.bed 
+
 
 
   #export FAMILY_LIST=`cat $CI_family.text`
-  export FAMILY_LIST="$DAD $MUM"   #Argument-liste à donner en debut de run 
-  export FAMILY_BED=`sed 's/ /.cnv.bed /g; s/$/.cnv.bed/' <<< $FAMILY_LIST` #prevoir le chemin vers les bed
-  export FAMILY_GREP=`sed 's/ /|/g' <<< $FAMILY_LIST`
+  export FAMILY_LIST="${DAD} ${MUM}"   #Argument-liste à donner en debut de run 
+  export FAMILY_BED=`sed 's/ /.cnv.bed /g; s/$/.cnv.bed/' <<< ${FAMILY_LIST}` #prevoir le chemin vers les bed
+  export FAMILY_GREP=`sed 's/ /|/g' <<< ${FAMILY_LIST}`
 
   #ALL in 2 lines :
-  bedtools intersect -a $CI.cnv.bed -b $FAMILY_BED -loj -wao | sort -k1,1 -k2,2n | bedtools merge -c 4,5,6,7,8,9,10,24,23,25 -o distinct,distinct,distinct,distinct,distinct,distinct,distinct,collapse,collapse,collapse -delim "|" > ${CI}.HERIT-DN.bed 
+  ${BEDTOOLS_PATH} intersect -a ${CI}.cnv.bed -b ${FAMILY_BED} -loj -wao | sort -k1,1 -k2,2n | bedtools merge -c 4,5,6,7,8,9,10,24,23,25 -o distinct,distinct,distinct,distinct,distinct,distinct,distinct,collapse,collapse,collapse -delim "|" > ${CI}.HERIT-DN.bed 
 
   #add annotated header and annotate
   cat ~/PROJECTS/EXOMES/header.annotated.bed > ${CI}.HERIT-DN.annotated.bed
 
-  #annotate with all datas
-  bedtools intersect -a ${CI}.HERIT-DN.bed -b /home/puce/resources/hg19/gene_annot_hg19_final.bed -loj >> ${CI}.HERIT-DN.annotated.bed
+  #annotate with all data
+  ${BEDTOOLS_PATH} intersect -a ${CI}.HERIT-DN.bed -b ${HGBED} -loj >> ${CI}.HERIT-DN.annotated.bed
 
   #add size of CNV + link to decipher genome browser
   awk 'BEGIN { FS = OFS = "\t" }{if(NR>1){print $3-$2,"https://decipher.sanger.ac.uk/browser#q/"$4,$0}else{print}}' ${CI}.HERIT-DN.annotated.bed > ${CI}.HERIT-DN.annotated.final.bed 
@@ -731,4 +771,9 @@ fi
 if [ $1 == "makekdtree" ]
 then 
   makekdtree $2 $3 $4 $5 $6 $7
+fi
+
+if [ $1 == "cnvCalling" ]
+then 
+  cnvCalling $2 $3 $4 $5 $6 $7 $8 $9 $10 $11
 fi 
