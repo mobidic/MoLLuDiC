@@ -549,15 +549,6 @@ metricsMatrix() {
 
 makekdtree(){
 
-  # - Command ./clams.sh makekdtree knn outdir 
-  
-
-  #############################
-  # TO DO 
-  #############################
-  # ajouter en option le outputDir (à tester) 
-  # corriger le Rscript pour ne traiter que le sample
-
   RSCRIPT=$1
   RSCRIPT_FILE=$2
   KNN=$3 
@@ -565,8 +556,12 @@ makekdtree(){
   KD_OUT=$5
   FROM_SCRATCH=$6
   
-  debug "makekdtree : KNN is  \"$1\""
-  debug "makekdtree : KD_OUT is \"$2\"" 
+  debug "makekdtree : RSCRIPT is : \"${RSCRIPT}\""
+  debug "makekdtree : RSCRIPT_FILE is : \"${RSCRIPT_FILE}\"" 
+  debug "makekdtree : KNN is : \"${KNN}\""
+  debug "makekdtree : ALL_TREE is : \"${ALL_TREE}\""
+  debug "makekdtree : KD_OUT is : \"${KD_OUT}\""
+  debug "makekdtree : FROM_SCRATCH is : \"${FROM_SCRATCH}\""
 
   info "Checking makekdtree's arguments ..."
 
@@ -731,4 +726,9 @@ then
       dirpreparation size $3 $4
       ;;
   esac
+fi 
+
+if [ $1 == "makekdtree" ]
+then 
+  makekdtree $2 $3 $4 $5 $6 $7
 fi 
