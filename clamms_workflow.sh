@@ -61,6 +61,70 @@ log() {
   fi
 }
 
+###########################################################
+# CLAMMS DIRECTORIES PREPARATION
+###########################################################
+
+dirpreparation() {
+  
+  OPTION=$1
+
+  debug "dirpreparation : OPTION is : \"${OPTION}\""
+
+  case ${OPTION} in 
+    clamms)
+      CLAMMS_DIR=$2
+      debug "dirpreparation clamms : CLAMMS_DIR is : \"${CLAMMS_DIR}\"" 
+      mkdir ${CLAMMS_DIR}
+      mkdir ${CLAMMS_DIR}lib4Clamms
+      mkdir ${CLAMMS_DIR}lib4Clamms/hg19
+      ;;
+    library)
+      CLAMMS_DIR=$2
+      LIBRARY_NAME=$3
+      debug "dirpreparation library : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
+      debug "dirpreparation library : LIBRARY_NAME is : \"${LIBRARY_NAME}\""
+      if [ ! -d ${CLAMMS_DIR}lib4Clamms/hg19 ] 
+      then
+        error "Invalid Clamms directory format : \"${CLAMMS_DIR}lib4Clamms/hg19\" is missing ! Please use : \"dirpreparation clamms DIRECTORY\" to create correct clamms directories."
+        exit 1
+      fi
+      
+      mkdir ${CLAMMS_DIR}lib4Clamms/${LIBRARY_NAME}
+      mkdir ${CLAMMS_DIR}lib4Clamms/${LIBRARY_NAME}/windowsBeds
+      mkdir ${CLAMMS_DIR}lib4Clamms/${LIBRARY_NAME}/projects/
+      mkdir ${CLAMMS_DIR}lib4Clamms/${LIBRARY_NAME}/projects/all
+      mkdir ${CLAMMS_DIR}lib4Clamms/${LIBRARY_NAME}/projects/all/kdTreeMetrics
+      mkdir ${CLAMMS_DIR}lib4Clamms/${LIBRARY_NAME}/projects/all/normCoverageNoChrBeds
+      ;;
+    size)
+      LIBRARY_DIR=$2
+      INSERT_SIZE=$3
+      debug "dirpreparation size : LIBRARY_DIR is : \"${LIBRARY_DIR}\""
+      debug "dirpreparation size : INSERT_SIZE is : \"${INSERT_SIZE}\""
+      if  [ ! -d ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds ]
+      then 
+        error "Invalid Library directory format : \"${LIBRARY_DIR}projects/all/normCoverageNoChrBeds\" is missing ! Please use : \"dirpreparation library CLAMMS_DIR LIBRARY_NAME\" to create correct library directory."
+      fi
+
+      if [ -d ${LIBRARY_DIR}windowsBeds ]
+      then 
+        error "Invalid Library directory format : \"${LIBRARY_DIR}windowsBeds\" is missing ! Please use : \"dirpreparation library CLAMMS_DIR LIBRARY_NAME\" to create correct library directory."
+      fi 
+
+      if ! [[ "${INSERT_SIZE}" =~ ^[0-9]+$ ]]
+      then 
+        error "\"${INSERT_SIZE}\" must be an integer ! Please select a correct value."
+        exit 1
+      fi 
+
+      mkdir ${LIBRARY_DIR}windowsBeds/insertSize${INSERT_SIZE}/
+      ;;
+  esac
+}
+
+
+
 
 ###########################################################
 # INSTALL 
@@ -82,6 +146,7 @@ install() {
   then 
     warning "\"${CLAMMS_DIR}\" does not exist. \"${CLAMMS_DIR}\" was created"
     mkdir ${CLAMMS_DIR}
+    mk
     help
   fi
   info "... Argument Checking : OK"
@@ -107,7 +172,7 @@ install() {
 mapinstall() {
   
   CLAMMS_DIR=$1
-  INSTALLATION_PATH=${CLAMMS_DIR}/lib4Clamms/hg19
+  INSTALLATION_PATH=${CLAMMS_DIR}lib4Clamms/hg19
   BW2W_PATH=$2
   
   debug "mapinstall : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
@@ -120,8 +185,8 @@ mapinstall() {
   then 
     warning "\"${INSTALLATION_PATH}\" doens't exist. \"${INSTALLATION_PATH}\" was created"
     mkdir ${CLAMMS_DIR}
-    mkdir ${CLAMMS_DIR}/lib4Clamms
-    mkdir ${CLAMMS_DIR}/lib4Clamms/hg19
+    mkdir ${CLAMMS_DIR}lib4Clamms
+    mkdir ${CLAMMS_DIR}lib4Clamms/hg19
   fi 
   # - Check if /PATH/TO/bigWigToWig exists
   if [ ! -f ${BW2W_PATH} ]
@@ -150,7 +215,7 @@ mapinstall() {
 ###########################################################
 # CREATE WINDOWS BED - 1T
 ###########################################################
-# -- Command : ./clamms_workflow.sh windowsBed CLAMMS_DIR INSERT_SIZE INTERVALBEDFILE REFFASTA CLAMMS_SPECIAL_REGIONS LIBRARY
+# -- Command : ./clamms_workflow.sh windowsBed CLAMMS_DIR INSERT_SIZE INTERVALBEDFILE REFFASTA CLAMMS_SPECIAL_REGIONS LIBRARY_DIR
 
 #A faire tourner avec "chr", enlever "chr" en sortie du windows.bed
 #le github préconise de faire tourner sans le "chr" => prevoir un genome fasta sans chr
@@ -158,21 +223,21 @@ mapinstall() {
 
 windowsBed() {
 
-  CLAMMS_DIR=$1
-  INSERT_SIZE=$2
+  export CLAMMS_DIR=$1
+  export INSERT_SIZE=$2
   INTERVALBEDFILE=$3
   REFFASTA=$4
   #REF = CLAMMS_DIR/lib4CLAMMS/hg19
   CLAMMS_SPECIAL_REGIONS=$5
   #CLAMMS_DIR/data
-  LIBRARY=$6
+  LIBRARY_DIR=$6
   
   debug "windowsBed : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
   debug "windowsBed : INSERT_SIZE is : \"${INSERT_SIZE}\""
   debug "windowsBed : INTERVALBEDFILE is : \"${INTERVALBEDFILE}\""
   debug "windowsBed : REFFASTA is : \"${REFFASTA}\""
   debug "windowsBed : CLAMMS_SPECIAL_REGIONS is : \"${CLAMMS_SPECIAL_REGIONS}\""
-  debug "windowsBed : LIBRARY is : \"${LIBRARY}\""
+  debug "windowsBed : LIBRARY_DIR is : \"${LIBRARY_DIR}\""
 
   info "Checking windowsBed's arguments..."
   # - If exists
@@ -183,7 +248,7 @@ windowsBed() {
     help 
   fi 
   ## - Check if /PATH/TO/annotate_windows.sh exists 
-  if [ ! -f "${CLAMMS_DIR}/annotate_windows.sh" ]
+  if [ ! -f "${CLAMMS_DIR}annotate_windows.sh" ]
   then 
     error "\"annotate_windows.sh\" in \"${CLAMMS_DIR}\" does not exist !"
     help 
@@ -218,10 +283,10 @@ windowsBed() {
     error "\"${CLAMMS_SPECIAL_REGIONS}\" does not exist !"
     help
   fi 
-  ## - Check if LIBRARY exists 
-  if [ ! -d ${LIBRARY} ]
+  ## - Check if LIBRARY_DIR exists 
+  if [ ! -d ${LIBRARY_DIR} ]
   then 
-    error "\"${LIBRARY}\" does not exist !"
+    error "\"${LIBRARY_DIR}\" does not exist !"
     help 
   fi
 
@@ -244,21 +309,25 @@ windowsBed() {
   info "... Argument checking : done !"
 
   info "Launching annotate_windows.sh ..."
-  chmod +x ${CLAMMS_DIR}/annotate_windows.sh
+  chmod +x ${CLAMMS_DIR}annotate_windows.sh
   # - Mkdir if insertSize${INSERT_SIZE} does not exist
-  if [ ! -d ${LIBRARY}/windowsBeds/insertSize${INSERT_SIZE} ]
+
+if [ ! -d ${LIBRARY_DIR}windowsBeds ]
+  then
+    echo "\"${LIBRARY_DIR}windowsBeds \" does not exist but was created !  "
+    mkdir ${LIBRARY_DIR}windowsBeds
+  fi
+  
+if [ ! -d ${LIBRARY_DIR}windowsBeds/insertSize${INSERT_SIZE} ]
   then 
-    echo "\"${LIBRARY}/windowsBeds/insertSize${INSERT_SIZE}\" does not exist but was created !  "
-    mkdir ${LIBRARY}/windowsBeds/insertSize${INSERT_SIZE}
+    echo "\"${LIBRARY_DIR}windowsBeds/insertSize${INSERT_SIZE}\" does not exist but was created !  "
+    mkdir ${LIBRARY_DIR}windowsBeds/insertSize${INSERT_SIZE}
   fi 
   # - Sort INTERVALBEDFILE and sed chr column of the resulting file
-  sort -k1,1 -k2,2n ${INTERVALBEDFILE} | sed 's/^chr//g'> ${LIBRARY}/interval_sort_nochr.bed
-
-  #debug 		  
-  CLAMMS_DIR=$1
+  sort -k1,1 -k2,2n ${INTERVALBEDFILE} | sed 's/^chr//g'> ${LIBRARY_DIR}interval_sort_nochr.bed
 
   # - Run annotate_windows
-  ${CLAMMS_DIR}/annotate_windows.sh ${LIBRARY}/interval_sort_nochr.bed ${REFFASTA} ${CLAMMS_DIR}/lib4Clamms/hg19/mappability.bed ${INSERT_SIZE} ${CLAMMS_SPECIAL_REGIONS} > ${LIBRARY}/windowsBeds/insertSize${INSERT_SIZE}/windows_nochr_${INSERT_SIZE}pb.bed
+  ${CLAMMS_DIR}annotate_windows.sh ${LIBRARY_DIR}interval_sort_nochr.bed ${REFFASTA} ${CLAMMS_DIR}/lib4Clamms/hg19/mappability.bed ${INSERT_SIZE} ${CLAMMS_SPECIAL_REGIONS} > ${LIBRARY_DIR}windowsBeds/insertSize${INSERT_SIZE}/windows_nochr_${INSERT_SIZE}pb.bed
   info "... annotate_windows.sh done !"
 }
 
@@ -272,65 +341,79 @@ windowsBed() {
 
 normalizeFS() {
 
-  # - Command ./clams.sh normalize /PATH/TO/coverage /PATH/TO/clams_dir SAMPLE
+  # - Command ./clams.sh normalizeFS /PATH/TO/coverage /PATH/TO/clams_dir /PATH/TO/WINDOWS_BED
 
-  COVERAGE_PATH=$1
-  CLAMMS_DIR=$2
-  SAMPLEID=$3
+  export COVERAGE_PATH=$1
+  export CLAMMS_DIR=$2
+  export WINDOWS_BED=$3
+  export LIBRARY_DIR=$4
 
-  debug "normalize : COVERAGE_PATH is : \"${COVERAGE_PATH}\""
-  debug "normalize : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
-  debug "normalize : SAMPLEID name is : \"${SAMPLEID}\""
+  debug "normalizeFS : COVERAGE_PATH is : \"${COVERAGE_PATH}\""
+  debug "normalizeFS : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
+  debug "normalizeFS : WINDOWS_BED is : \"${WINDOWS_BED}\""
+  debug "normalizeFS : LIBRARY_DIR : \"${LIBRARY_DIR}\""
  
   info "Checking normalize's arguments ..."
 
   # - Check if Coverage Path exists 
-  if [ ! -f ${COVERAGE_PATH} ]
+  if [ ! -d ${COVERAGE_PATH} ]
   then
     error "\"${COVERAGE_PATH}\" does not exist !"
     help 
   fi 
   
-  # - Check 
-  if [ ! -d ${CLAMS_DIR} ]
+  # - Check if CLAMMS_DIR exists
+  if [ ! -d ${CLAMMS_DIR} ]
   then 
-    error "\"${CLAMS_DIR}\" does not exist ! "
+    error "\"${CLAMMS_DIR}\" does not exist ! "
     help 
   fi 
 
+  # - Check if WINDOWS_BED exists 
+  if [ ! -f ${WINDOWS_BED} ]
+  then
+    error "\"${WINDOWS_BED}\" does not exist ! "
+    help
+  fi
+
   info "... Argument checking : done !"
-  info "Lauching normalize ..."
+  info "Lauching normalize and removing "chr" in first column ..."
 
   cd ${COVERAGE_PATH}
-  ls *.coverage.nochr.bed | cut -d '.' -f 1 | while read SAMPLEID ; do  ${CLAMMS_DIR}/normalize_coverage ${SAMPLEID}.coverage.nochr.bed windows.bed > ${SAMPLEID}.norm.coverage.bed ;done
+  for i in  *.bed; do sed 's/^chr//g' $i > $(basename "$i" | cut -d_ -f1 | cut -d. -f1).clamms.coverage.bed ; done
+  ls *.clamms.coverage.bed | cut -d '.' -f 1 | while read SAMPLEID ; do  ${CLAMMS_DIR}normalize_coverage ${SAMPLEID}.clamms.coverage.bed $WINDOWS_BED > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.norm.coverage.bed ;done
 
   info "... normalize Done !"
 }
 
 normalize(){
 
-  COVERAGE_PATH=$1
-  CLAMMS_DIR=$2
-  SAMPLEID=$3
-  CLAMMSCOVERAGEFILE=$4
-  WINDOWS_BED=$5
+  # - Command ./clams.sh normalize /PATH/TO/coverage /PATH/TO/clams_dir SAMPLE 
 
-  debug "normalize : COVERAGE_PATH is : \"${COVERAGE_PATH}\""
+  CLAMMS_DIR=$1
+  SAMPLEID=$2
+  CLAMMSCOVERAGEFILE=$3
+  WINDOWS_BED=$4
+  LIBRARY_DIR=$5
+
   debug "normalize : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
   debug "normalize : SAMPLEID name is : \"${SAMPLEID}\""
+  debug "normalize : CLAMMSCOVERAGEFILE is : \"${CLAMMSCOVERAGEFILE}\""
+  debug "normalize : WINDOWS_BED is : \"${WINDOWS_BED}\""
+  debug "normalize : LIBRARY_DIR is : \"${LIBRARY_DIR}\""
  
   info "Checking normalize's arguments ..."
   # - If exists
   ## - Check if Coverage Path exists 
-  if [ ! -f ${COVERAGE_PATH} ]
+  if [ ! -d ${COVERAGE_PATH} ]
   then
     error "\"${COVERAGE_PATH}\" does not exist !"
     help 
   fi
   ## - Check 
-  if [ ! -d ${CLAMS_DIR} ]
+  if [ ! -d ${CLAMMS_DIR} ]
   then 
-    error "\"${CLAMS_DIR}\" does not exist ! "
+    error "\"${CLAMMS_DIR}\" does not exist ! "
     help 
   fi 
   
@@ -347,8 +430,7 @@ normalize(){
   fi
 
   info "Lauching normalize ..."
-  cd ${COVERAGE_PATH}
-  ${CLAMMS_DIR}/normalize_coverage ${CLAMMSCOVERAGEFILE} ${WINDOWS_BED} > ${SAMPLEID}.norm.coverage.bed
+  ${CLAMMS_DIR}normalize_coverage ${CLAMMSCOVERAGEFILE} ${WINDOWS_BED} > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.norm.coverage.bed
 
   info "... normalize Done !"
 
@@ -365,10 +447,12 @@ metricsMatrixFS(){
 
   # - Command ./clams.sh metricsMatrix /PATH/TO/hs_metrics SAMPLE
 
+  LIBRARY_DIR=$1
+  HS_FOLDER=$2
+  MATCH_METRICS=$3
 
-  HS_FOLDER=$1
-
-  debug "metricsMatrixFS : HS_FOLDER is : \"$1\""
+  debug "metricsMatrixFS : LIBRARY_DIR is : \"${LIBRARY_DIR}\""
+  debug "metricsMatrixFS : HS_FOLDER is : \"${HS_FOLDER}\""
 
   info "Checking metricsMatrixFS' arguments ..."
 
@@ -382,28 +466,30 @@ metricsMatrixFS(){
   info "... Argument checking : done !"
   info "Launching metricsMatrixFS ..."
   
-  cd ${HS_FOLDER}
   ## TOUTES LES VARIABLES SONT A RECUP DANS MOBIDL
-  for SAMPLEID in *hs_metrics.txt
+  for i in ${HS_FOLDER}*hs_metrics.txt
   do 
-    echo "SAMPLE" > ${SAMPLEID}_kd_sample.txt
-    echo ${SAMPLEID} >> ${SAMPLEID}_kd_sample.txt 
+    SAMPLEID=$(basename "$i" | cut -d_ -f1 | cut -d. -f1)
+    echo "SAMPLE" > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt
+    echo ${SAMPLEID} >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt 
     #path to multiple metrics
-    grep -v "#" ${SAMPLEID}_hs_metrics.txt | head -3 | tail -2 | cut -f51,42,38,21,10,52 > ${SAMPLEID}_kd_hsmetrics.txt 
-    #path to insertsize metrics
-    # Sample ID insertsizer metrics .txt | sample id hs metrics .txt 
-    grep -v "#" ${SAMPLEID}_insertsize_metrics.txt | head -3 | tail -2 | cut -f5 > ${SAMPLEID}_kd_insertsize_metrics.txt 
-    paste ${SAMPLEID}_kd_sample.txt ${SAMPLEID}_kd_hsmetrics.txt   ${SAMPLEID}_kd_insertsize_metrics.txt >  ${SAMPLEID}_kdTree_metrics.txt 
-    # $SAMPLEID_kdTree_metrics.txt a ecrire dans le répertoire kdTreeMetrics
+    grep -v "#" $i | head -3 | tail -2 > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_metrics.txt 
+  done
+  
+for i in ${HS_FOLDER}*insertsize_metrics.txt
+  do
+    SAMPLEID=$(basename "$i" | cut -d_ -f1 | cut -d. -f1)
+    grep -v "#" $i | head -3 | tail -2  | paste ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_metrics.txt  >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_insertsize_metrics.txt
   done
 
-  #head the file with parameter names
-  #cat ${SAMPLEID}_kdTree_metrics.txt  > ALL_kdTreeMetrics.txt
-  #fill with the data (check if conversion of "," into "." is nedded)
-  for i in *kdTree_metrics.txt; do t -1 $i | sed 's/,/./g' >> ALL_kdTreeMetrics.txt ; done
+    # Sample ID insertsizer metrics .txt | sample id hs metrics .txt 
+    grep -v "#" $i | head -3 | tail -2 | cut -f5 > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_insertsize_metrics.txt 
+    paste ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_hsmetrics.txt ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_insertsize_metrics.txt >  ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kdTree_metrics.txt 
 
-  #then move to répertoire kdTreeMetrics 
-  cp ${SAMPLEID}_kdTree_metrics.txt kdTreeMetricsDir/
+  #head the file with parameter names
+  echo "SAMPLE	PCT_PF_UQ_READS	ON_BAIT_VS_SELECTED	PCT_TARGET_BASES_10X	PCT_TARGET_BASES_50X	AT_DROPOUT	GC_DROPOUT	MEAN_INSERT_SIZE"  > ${LIBRARY_DIR}projects/all/kdTreeMetrics/ALL_kdTreeMetrics.txt
+  #fill with the data (check if conversion of "," into "." is nedded)
+  for i in ${LIBRARY_DIR}projects/all/kdTreeMetrics/*kdTree_metrics.txt; do tail -1 $i | sed 's/,/./g' >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/ALL_kdTreeMetrics.txt ; done
 
   info "... metricsMatrixFS done !"
 
@@ -419,45 +505,38 @@ metricsMatrixFS(){
 
 metricsMatrix() {
   
-  HS_FOLDER=$1
+  LIBRARY_DIR=$1
   SAMPLEID=$2
   HSMETRICSTXT=$3
   INSERT_SIZE_METRICS_TXT=$4
 
-  debug "metricsMatrix : HS_FOLDER is : \"$1\""
-  debug "metricsMatrix : SAMPLEID is : \"$2\""
+  debug "metricsMatrix : LIBRARY_DIR is : \"${LIBRARY_DIR}\""
+  debug "metricsMatrix : SAMPLEID is : \"${SAMPLEID}\""
+  debug "metricsMatrix : HSMETRICSTXT is : \"${HSMETRICSTXT}\""
+  debug "metricsMatrix : INSERT_SIZE_METRICS_TXT is : \"${INSERT_SIZE_METRICS_TXT}\""
 
   info "Checking metricsMatrix's arguments ..."
 
-  # - Check if HS_FOLDER exists 
-  if [ ! -d ${HS_FOLDER} ]
-  then 
-    error "\"${HS_FOLDER}\" does not exist !"
-    help 
-  fi 
 
   info "... Argument checking : done !"
   info "Launching metricsMatrix ..."
   
-  cd ${HS_FOLDER}
   ## TOUTES LES VARIABLES SONT A RECUP DANS MOBIDL
-  echo "SAMPLE" > ${SAMPLEID}_kd_sample.txt
-  echo ${SAMPLEID} >> ${SAMPLEID}_kd_sample.txt 
+  echo "SAMPLE" > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt
+  echo ${SAMPLEID} >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt 
   #path to multiple metrics
-  grep -v "#" ${HSMETRICSTXT} | head -3 | tail -2 | cut -f51,42,38,21,10,52 > ${SAMPLEID}_kd_hsmetrics.txt 
+  grep -v "#" ${HSMETRICSTXT} | head -3 | tail -2 | cut -f51,42,38,21,10,52 > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_hsmetrics.txt 
   #path to insertsize metrics
   # Sample ID insertsizer metrics .txt | sample id hs metrics .txt 
-  grep -v "#" ${INSERT_SIZE_METRICS_TXT} | head -3 | tail -2 | cut -f5 > ${SAMPLEID}_kd_insertsize_metrics.txt 
-  paste ${SAMPLEID}_kd_sample.txt ${SAMPLEID}_kd_hsmetrics.txt   ${SAMPLEID}_kd_insertsize_metrics.txt >  ${SAMPLEID}_kdTree_metrics.txt 
+  grep -v "#" ${INSERT_SIZE_METRICS_TXT} | head -3 | tail -2 | cut -f5 > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_insertsize_metrics.txt 
+  paste ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_hsmetrics.txt ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_insertsize_metrics.txt >  ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kdTree_metrics.txt 
   # $SAMPLEID_kdTree_metrics.txt a ecrire dans le répertoire kdTreeMetrics
-
+  
   #head the file with parameter names
-  cat ${SAMPLEID}_kdTree_metrics.txt  > ALL_kdTreeMetrics.txt
+  #cat ${SAMPLEID}_kdTree_metrics.txt  > ALL_kdTreeMetrics.txt
   #fill with the data (check if conversion of "," into "." is nedded)
-  for i in *kdTree_metrics.txt; do t -1 $i | sed 's/,/./g' >> ALL_kdTreeMetrics.txt ; done
+  ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kdTree_metrics.txt t -1 $i | sed -i '1i' ${LIBRARY_DIR}projects/all/kdTreeMetrics/ALL_kdTreeMetrics.txt
 
-  #then move to répertoire kdTreeMetrics 
-  cp ${SAMPLEID}_kdTree_metrics.txt kdTreeMetricsDir/
 
   info "... metricsMatrix done !"
 
@@ -479,8 +558,11 @@ makekdtree(){
   # ajouter en option le outputDir (à tester) 
   # corriger le Rscript pour ne traiter que le sample
 
-  KNN=$1 
-  KD_OUT=$2
+  RSCRIPT=$1
+  RSCRIPT_FILE=$2
+  KNN=$3 
+  ALL_TREE=$4
+  KD_OUT=$5
   
   debug "makekdtree : KNN is  \"$1\""
   debug "makekdtree : KD_OUT is \"$2\"" 
@@ -500,12 +582,30 @@ makekdtree(){
     help 
   fi 
 
+  if [ ! -f ${RSCRIPT_FILE} ]
+  then 
+    error "\"${RSCRIPT_FILE}\" does not exist ! Please select a correct file."
+    help 
+  fi 
+
+  if [[ ${RSCRIPT_FILE##*\.} != "rscript" ]]
+  then 
+    error "\"${RSCRIPT_FILE}\" is not a correct file ! Please select .rscript file."
+    help 
+  fi 
+
+  if [ ! -f ${ALL_TREE} ]
+  then 
+    error "\"${ALL_TREE}\" does not exist ! Please select a correct file."
+    help 
+  fi 
+
   info "... Argument checking : done !"
 
   info "Launching KdTree RScript ..."
 
   
-  Rscript ~/PROJECTS/EXOMES/compute_kdTree.Rscript ${KNN} ALL_kdTreeMetrics.txt ${KD_OUT}
+  ${RSCRIPT} ${RSCRIPT_FILE} ${KNN} ${ALL_TREE} ${KD_OUT}
 
   #sort nns.txt for the next JOIN
   for i in *.${KNN}nns.txt
@@ -593,5 +693,35 @@ fi
 
 if [ $1 == "normalizeFS" ]
 then 
-  normalizeFS $2 $3 $4
+  normalizeFS $2 $3 $4 $5
 fi
+
+if [ $1 == "normalize" ]
+then 
+  normalize $2 $3 $4 $5 $6
+fi 
+
+if [ $1 == "metricsMatrixFS" ]
+then 
+  metricsMatrixFS $2 $3
+fi 
+
+if [ $1 == "metricsMatrix" ]
+then 
+  metricsMatrix $2 $3 $4 $5 
+fi 
+
+if [ $1 == "dirpreparation" ]
+then 
+  case $2 in 
+    clamms)
+      dirpreparation clamms $3
+      ;;
+    library)
+      dirpreparation library $3 $4
+      ;;
+    size)
+      dirpreparation size $3 $4
+      ;;
+  esac
+fi 
