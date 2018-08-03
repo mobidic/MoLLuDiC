@@ -79,6 +79,7 @@ singularity help <filename.simg>
 ## Requirements 
 
 - Linux OS
+- Cromwell
 - C
 - git
 - python 3
@@ -93,6 +94,7 @@ singularity help <filename.simg>
 
 ```bash
 singularity run  <filename.simg> -i workflow_inputs.json```
+```
 
 ## NGS routine workflow
 
