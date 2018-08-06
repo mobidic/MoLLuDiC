@@ -445,14 +445,15 @@ normalize(){
 #create metrics matrix for KD tree, all in one: (be careful, column position of picard metrics could change, better to do a grep instead)
 metricsMatrixFS(){
 
-  # - Command ./clams.sh metricsMatrix /PATH/TO/hs_metrics SAMPLE
-
+  # - Command ./clams.sh metricsMatrix /PATH/TO/LIBRARY_DIR /PATH/TO/HS_FOLDER /PATH/TO/MATCH_METRICS_SCRIPT 
   LIBRARY_DIR=$1
   HS_FOLDER=$2
-  MATCH_METRICS=$3
+  PYTHON_PATH=$3
+  MATCH_METRICS=$4
 
   debug "metricsMatrixFS : LIBRARY_DIR is : \"${LIBRARY_DIR}\""
   debug "metricsMatrixFS : HS_FOLDER is : \"${HS_FOLDER}\""
+  debug "metricsMatrixFS : MATCH_METRICS_SCRIPT is : \"${MATCH_METRICS}\""
 
   info "Checking metricsMatrixFS' arguments ..."
 
@@ -463,85 +464,233 @@ metricsMatrixFS(){
     help 
   fi 
 
+  if [ ! -d ${LIBRARY_DIR} ]
+  then
+    error "\"${LIBRARY_DIR}\" does not exist !"
+    help
+  fi
+
+  if [ ! -f ${MATCH_METRICS} ]
+  then
+    error "\"${MATCH_METRICS}\" does not exist !"
+    help
+  fi
+
   info "... Argument checking : done !"
   info "Launching metricsMatrixFS ..."
-  
-  ## TOUTES LES VARIABLES SONT A RECUP DANS MOBIDL
+
+
+ 
+ # - Create a combine metrics file for kdTree
   for i in ${HS_FOLDER}*hs_metrics.txt
   do 
     SAMPLEID=$(basename "$i" | cut -d_ -f1 | cut -d. -f1)
+    # Create kd_sample.txt
     echo "SAMPLE" > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt
     echo ${SAMPLEID} >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt 
-    #path to multiple metrics
-    grep -v "#" $i | head -3 | tail -2 > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_metrics.txt 
+    # Create kd_sex_sample.txt
+    echo "SEX" > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sex_sample.txt
+    grep "Y" ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.norm.coverage.bed | awk '{ x += $4; n++; } END { if (x/n >= 0.1) print "100"; else print "0"; }' >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sex_sample.txt
+    
+    # Create a compatible hsmetrics file
+    grep -v "#" $i | head -3 | tail -2 > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_hsmetrics.txt 
+    # add insertsizemetrics
+    grep -v "#" ${HS_FOLDER}${SAMPLEID}*insertsize_metrics.txt | head -3 | tail -2  | paste ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_hsmetrics.txt -  > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_metrics.txt
+ info "Metrics are matching for ${SAMPLEID}"
+   # select only useful column
+    ${PYTHON_PATH} ${MATCH_METRICS} ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_metrics.txt | head -n2 > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_allmetrics.txt
+   # add samplei and sex to metrics
+   paste ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_allmetrics.txt ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sex_sample.txt > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kdTree_metrics.txt 
   done
   
-for i in ${HS_FOLDER}*insertsize_metrics.txt
-  do
-    SAMPLEID=$(basename "$i" | cut -d_ -f1 | cut -d. -f1)
-    grep -v "#" $i | head -3 | tail -2  | paste ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_metrics.txt  >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_insertsize_metrics.txt
-  done
+ # for i in ${HS_FOLDER}*insertsize_metrics.txt
+ # do
+    #SAMPLEID=$(basename "$i" | cut -d_ -f1 | cut -d. -f1)
+   # grep -v "#" $i | head -3 | tail -2  | paste ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_hsmetrics.txt -  > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_metrics.txt
+  #done
 
     # Sample ID insertsizer metrics .txt | sample id hs metrics .txt 
-    grep -v "#" $i | head -3 | tail -2 | cut -f5 > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_insertsize_metrics.txt 
-    paste ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_hsmetrics.txt ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_insertsize_metrics.txt >  ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kdTree_metrics.txt 
+#  for i in ${HS_FOLDER}*tmp_kd_metrics.txt
+#  do
+#    SAMPLEID=$(basename "$i" | cut -d_ -f1 | cut -d. -f1)
+ #   python3 ${MATCH_METRICS} ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_metrics.txt > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_allmetrics.txt
+ # done
+
+#  for i in ${LIBRARY_DIR}projects/all/kdTreeMetrics/*kd_sample.txt
+#  do 
+#   SAMPLEID=$(basename "$i" | cut -d_ -f1 | cut -d. -f1) 
+#   paste $i ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_allmetrics.txt > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kdTree_metrics.txt 
+#  done
+  # $SAMPLEID_kdTree_metrics.txt a ecrire dans le répertoire kdTreeMetrics
 
   #head the file with parameter names
-  echo "SAMPLE	PCT_PF_UQ_READS	ON_BAIT_VS_SELECTED	PCT_TARGET_BASES_10X	PCT_TARGET_BASES_50X	AT_DROPOUT	GC_DROPOUT	MEAN_INSERT_SIZE"  > ${LIBRARY_DIR}projects/all/kdTreeMetrics/ALL_kdTreeMetrics.txt
+  echo "SAMPLE	PCT_PF_UQ_READS	ON_BAIT_VS_SELECTED	PCT_TARGET_BASES_10X	PCT_TARGET_BASES_50X	AT_DROPOUT	GC_DROPOUT	MEAN_INSERT_SIZE	SEX"  > ${LIBRARY_DIR}projects/all/kdTreeMetrics/ALL_kdTreeMetrics.txt
   #fill with the data (check if conversion of "," into "." is nedded)
-  for i in ${LIBRARY_DIR}projects/all/kdTreeMetrics/*kdTree_metrics.txt; do tail -1 $i | sed 's/,/./g' >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/ALL_kdTreeMetrics.txt ; done
+  for i in ${LIBRARY_DIR}projects/all/kdTreeMetrics/*kdTree_metrics.txt; do tail -n +2 $i | sed 's/,/./g' >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/ALL_kdTreeMetrics.txt ; done
 
   info "... metricsMatrixFS done !"
 
+  if [ "$4" != "DEBUG" ]
+  then
+   info "remove temporary files"
+  rm ${LIBRARY_DIR}projects/all/kdTreeMetrics/*_tmp_*
+  rm ${LIBRARY_DIR}projects/all/kdTreeMetrics/*_kd_sample.txt
+  fi
 
-  #for i in *hs_metrics.txt ; do 
-  #  echo "SAMPLE"> ${i/hs_metrics/kd_sample} ;
-  #  echo ${i/_hs_metrics.txt} >> ${i/hs_metrics/kd_sample}; 
-  #  grep -v "#" $i | head -3 | tail -2 | cut -f51,42,38,21,10,52 > ${i/hs_metrics/kd_hsmetrics} ;
-  #  grep -v "#" ${i/hs/insertsize} | head -3 | tail -2 | cut -f5 > ${i/hs/kd_insertsize} ;
-  #  paste ${i/hs_metrics/kd_sample}  ${i/hs_metrics/kd_hsmetrics} ${i/hs_/kd_insertsize_} > ${i/hs_/kdTree_}     ; 
-  #done
 }
 
 metricsMatrix() {
+  
+  # - Command ./clamms_workflow.sh metricsMatrix /PATH/TO/LIBRARY_DIR SAMPLEID /PATH/TO/HSMETRICSTXT /PATH/TO/INSERT_SIZE_METRICS_TXT /PATH/TO/MATCH_METRICS_SCRIPT 
   
   LIBRARY_DIR=$1
   SAMPLEID=$2
   HSMETRICSTXT=$3
   INSERT_SIZE_METRICS_TXT=$4
+  PYTHON_PATH=$5
+  MATCH_METRICS=$6
 
   debug "metricsMatrix : LIBRARY_DIR is : \"${LIBRARY_DIR}\""
   debug "metricsMatrix : SAMPLEID is : \"${SAMPLEID}\""
   debug "metricsMatrix : HSMETRICSTXT is : \"${HSMETRICSTXT}\""
   debug "metricsMatrix : INSERT_SIZE_METRICS_TXT is : \"${INSERT_SIZE_METRICS_TXT}\""
+  debug "metricsMatrix : MATCH_METRICS_SCRIPT is : \"${MATCH_METRICS}\""
+
 
   info "Checking metricsMatrix's arguments ..."
 
+  if [ ! -f ${HSMETRICSTXT} ]
+  then
+    error "\"${HSMETRICSTXT}\" does not exist !"
+    help
+  fi
+
+  if [ ! -f ${INSERT_SIZE_METRICS_TXT} ]
+  then
+    error "\"${INSERT_SIZE_METRICS_TXT}\" does not exist !"
+    help
+  fi
+
+  if [ ! -d ${LIBRARY_DIR} ]
+  then
+    error "\"${LIBRARY_DIR}\" does not exist !"
+    help
+  fi
+
+  if [ ! -f ${MATCH_METRICS} ]
+  then
+    error "\"${MATCH_METRICS}\" does not exist !"
+    help
+  fi
 
   info "... Argument checking : done !"
   info "Launching metricsMatrix ..."
   
-  ## TOUTES LES VARIABLES SONT A RECUP DANS MOBIDL
+ # - Create a combine metrics file for kdTree
   echo "SAMPLE" > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt
   echo ${SAMPLEID} >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt 
-  #path to multiple metrics
-  grep -v "#" ${HSMETRICSTXT} | head -3 | tail -2 | cut -f51,42,38,21,10,52 > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_hsmetrics.txt 
-  #path to insertsize metrics
-  # Sample ID insertsizer metrics .txt | sample id hs metrics .txt 
-  grep -v "#" ${INSERT_SIZE_METRICS_TXT} | head -3 | tail -2 | cut -f5 > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_insertsize_metrics.txt 
-  paste ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_hsmetrics.txt ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_insertsize_metrics.txt >  ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kdTree_metrics.txt 
-  # $SAMPLEID_kdTree_metrics.txt a ecrire dans le répertoire kdTreeMetrics
-  
-  #head the file with parameter names
-  #cat ${SAMPLEID}_kdTree_metrics.txt  > ALL_kdTreeMetrics.txt
-  #fill with the data (check if conversion of "," into "." is nedded)
-  ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kdTree_metrics.txt t -1 $i | sed -i '1i' ${LIBRARY_DIR}projects/all/kdTreeMetrics/ALL_kdTreeMetrics.txt
+ # Create kd_sex_sample.txt
+  echo "SEX" > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sex_sample.txt
+  grep "Y" ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.norm.coverage.bed | awk '{ x += $4; n++; } END { if (x/n >= 0.1) print "100"; else print "0"; }' >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sex_sample.txt
 
+  #path to multiple metrics
+  grep -v "#" ${HSMETRICSTXT} | head -3 | tail -2 > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_hsmetrics.txt
+
+  #path to insertsize metrics
+  grep -v "#" ${INSERT_SIZE_METRICS_TXT} | head -3 | tail -2  | paste ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_hsmetrics.txt -  > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_metrics.txt
+
+  info "Metrics are matching for ${SAMPLEID}"
+
+  # select only useful column
+   ${PYTHON_PATH} ${MATCH_METRICS} ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_metrics.txt | head -n2 > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_allmetrics.txt
+ 
+   # add sample to metrics
+   paste ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_allmetrics.txt ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sex_sample.txt  > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kdTree_metrics.txt
+
+   # check if sample line already exist, if yes remove it
+  sed -i "/^${SAMPLEID}\t/d" ${LIBRARY_DIR}projects/all/kdTreeMetrics/ALL_kdTreeMetrics.txt  
+
+  #fill with the data (check if conversion of "," into "." is nedded)
+  tail -n +2 ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kdTree_metrics.txt | sed 's/,/./g' | sed -i '1 r /dev/stdin' ${LIBRARY_DIR}projects/all/kdTreeMetrics/ALL_kdTreeMetrics.txt 
 
   info "... metricsMatrix done !"
 
+  if [ "$6" != "DEBUG" ]
+  then
+   info "remove temporary files"
+  rm ${LIBRARY_DIR}projects/all/kdTreeMetrics/*_tmp_*
+  rm ${LIBRARY_DIR}projects/all/kdTreeMetrics/*_kd_sample.txt
+  fi
+
 }
 
+
+##########################################
+# REMOVE RELATIVES 
+##########################################
+
+removeRelatives() {
+
+export  ALLKDTREE=$1
+export  FAMILYLIST=$2
+export  LIBRARY_DIR=$3
+
+  debug "removeRelatives : LIBRARY_DIR is : \"${LIBRARY_DIR}\""
+  debug "removeRelatives : FAMILYLIST is : \"${FAMILYLIST}\""
+  debug "removeRelatives : ALLKDTREE is : \"${ALLKDTREE}\""
+
+
+  info "Checking removeRelatives's arguments ..."
+
+  if [ ! -f ${ALLKDTREE} ]
+  then
+    error "\"${ALLKDTREE}\" does not exist !"
+    help
+  fi
+
+  if [ ! -f ${FAMILYLIST} ]
+  then
+    error "\"${FAMILYLIST}\" does not exist !"
+    help
+  fi
+
+  if [ ! -s ${FAMILYLIST} ]
+  then
+    error "\"${FAMILYLIST}\" is empty !"
+  help
+  exit 1
+  fi
+
+  if [ ! -d ${LIBRARY_DIR} ]
+  then
+    error "\"${LIBRARY_DIR}\" does not exist !"
+    help
+  fi
+
+  info "... Argument checking : done !"
+  info "Launching removeRelatives ..."
+
+        awk 'BEGIN{family="";}{
+                split($0,a,"\t");
+                if(NF == 0 ){
+                        next;
+                }
+                if(length(a)== 1){
+                        system("cp ${ALLKDTREE} ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[1]"_ALL_kdTreeMetrics.txt" )
+                }else{
+                        for (i=1;i<=length(a);i++){
+                                for (j=1;j<=length(a);j++){
+                                        if(j!=i){family  = family"^"a[j]"\\s|"}
+                                }
+                                family = "\""family"^####################\"";
+                                print a[i] "family is here:  "family;
+                                system("grep -vE "family" ${ALLKDTREE} >  ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[i]"_ALL_kdTreeMetrics.txt")
+                                family=""
+                        };
+                }
+
+        }'  ${FAMILYLIST}
+}
 
 ###########################################
 # MAKEKDTREE
@@ -549,14 +698,14 @@ metricsMatrix() {
 
 makekdtree(){
 
-  RSCRIPT=$1
+  RSCRIPT_PATH=$1
   RSCRIPT_FILE=$2
   KNN=$3 
   ALL_TREE=$4
   LIBRARY_DIR=$5
   FROM_SCRATCH=$6
   
-  debug "makekdtree : RSCRIPT is : \"${RSCRIPT}\""
+  debug "makekdtree : RSCRIPT_PATH is : \"${RSCRIPT_PATH}\""
   debug "makekdtree : RSCRIPT_FILE is : \"${RSCRIPT_FILE}\"" 
   debug "makekdtree : KNN is : \"${KNN}\""
   debug "makekdtree : ALL_TREE is : \"${ALL_TREE}\""
@@ -584,7 +733,7 @@ makekdtree(){
     help 
   fi 
 
-  if [[ ${RSCRIPT_FILE##*\.} != "rscript" ]]
+  if [[ ${RSCRIPT_FILE##*\.} != "Rscript" ]]
   then 
     error "\"${RSCRIPT_FILE}\" is not a correct file ! Please select .rscript file."
     help 
@@ -606,13 +755,15 @@ makekdtree(){
 
   info "Launching KdTree RScript ..."
 
-  
-  ${RSCRIPT} ${RSCRIPT_FILE} ${KNN} ${ALL_TREE} ${LIBRARY_DIR}projects/all/kdTreeMetrics/ ${FROM_SCRATCH}
+ 
+ 
+  ${RSCRIPT_PATH} ${RSCRIPT_FILE} ${KNN} ${ALL_TREE} ${LIBRARY_DIR}projects/all/kdTreeMetrics/ ${FROM_SCRATCH}
 
   #sort nns.txt for the next JOIN
   for i in ${LIBRARY_DIR}projects/all/kdTreeMetrics/*.${KNN}nns.txt
   do 
     sort $i > ${i/txt/sort.txt}
+    rm $i
   done
 
   info "... KdTree RScript done !"
@@ -623,59 +774,149 @@ makekdtree(){
 # MODEL + CNV CALLING 
 ############################################
 
-cnvCalling(){
+cnvCallingFS() {
   
-
-  CLAMM_DIR=$1
-  LIBRARY_DIR=$2
-  SAMPLEID=$3
-  MUM=$4
-  DAD=$5
-  FILE=$6
-  SEX=$7
-  LIST_KDTREE=$8
-  WINDOWS_BED=$9
-  KNN=$10
+  CLAMMS_DIR=${1}
+  LIBRARY_DIR=${2}
+  LIST_KDTREE=${3}
+  WINDOWS_BED=${4}
+  KNN=${5}
 
   debug "cnvCalling : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
   debug "cnvCalling : LIBRARY_DIR is :\"${LIBRARY_DIR}\""
-  debug "cnvCalling : SAMPLEID is : \"${SAMPLEID}\""
-  debug "cnvCalling : MUM is : \"${MUM}\""
-  debug "cnvCalling : DAD is \"${DAD}\""
-  debug "cnvCalling : FILE is : \"${FILE}\""
-  debug "cnvCalling : SEX is : \"${SEX}\""
   debug "cnvCalling : LIST_KDTREE is : \"${LIST_KDTREE}\""
   debug "cnvCalling : WINDOWS_BED is : \"${WINDOWS_BED}\""
   debug "cnvCalling : KNN is : \"${KNN}\""
 
+  info "cnvCalling : Arguments checking ..."
+
+  if [ ! -d ${LIBRARY_DIR} ]
+  then 
+    error "\"${LIBRARY_DIR}\" does not exist !"
+    help
+  fi 
+
+  if ! [[ "${KNN}" =~ ^[0-9]+$ ]]
+  then 
+    error "\"${KNN}\" is not a correct value ! Must be an integer."
+    help 
+  fi 
+  
+  if [ ! -d ${CLAMMS_DIR} ]
+  then 
+    error "\"${CLAMMS_DIR} does not exist !"
+    help 
+  fi 
+
+  if [ ! -f ${LIST_KDTREE} ]
+  then 
+    error "\"${LIST_KDTREE}\"  does not exist !"
+    help 
+  fi 
+
+  if [ ! -f ${WINDOWS_BED} ]
+  then 
+    error "\"${WINDOWS_BED}\" does not exist !"
+    help
+  fi 
+
+  info "cnvCalling : Arguments are OK !"
+  info "cnvCalling : Begin calling ..."
+
+
   ls ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/*.norm.coverage.bed |sort | while read FILE
   do 
-    SAMPLE=`echo "${FILE}" | cut -d '.' -f 1`
-    echo -e -n "${SAMPLEID}\t${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${FILE}\t"
+    SAMPLE=$(basename "${FILE}" | cut -d_ -f1 | cut -d. -f1)
+    echo -e -n "${SAMPLE}\t${SAMPLE}.norm.coverage.bed\t"
     grep "Y" ${FILE} | awk '{ x += $4; n++; } END { if (x/n >= 0.1) print "M"; else print "F"; }'
-  done > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.file.sex.sort.txt
+  done > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/all.file.sex.sort.txt
 
-  if [[ (${DAD} == "") || (${MUM} == "") ]]
+  ls ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/*.norm.coverage.bed | cut -d '.' -f 1 | while read FILE
+  do 
+    SAMPLE=$(basename "${FILE}" | cut -d_ -f1 | cut -d. -f1)
+    SEX=`echo "${SAMPLE}" | join - ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/all.file.sex.sort.txt | tr ' ' '\t' | cut -f 3`
+    join ${LIST_KDTREE} ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/all.file.sex.sort.txt | tr ' ' '\t' | cut -f 2- > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLE}.${KNN}nns.ref.panel.sex.txt
+    ${CLAMMS_DIR}fit_models ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLE}.${KNN}nns.ref.panel.sex.txt ${WINDOWS_BED} > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLE}.models.bed
+    ${CLAMMS_DIR}call_cnv ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLE}.norm.coverage.bed ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLE}.models.bed --sex ${SEX} > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLE}.cnv.bed 
+  done
+  
+
+  info "cnvCalling : Calling done !"
+
+}
+
+
+cnvCalling() {
+
+  CLAMMS_DIR=${1}
+  LIBRARY_DIR=${2}
+  NORMCOVBED=${3}
+  LIST_KDTREE=${4}
+  WINDOWS_BED=${5}
+  KNN=${6}
+
+  debug "cnvCalling : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
+  debug "cnvCalling : LIBRARY_DIR is :\"${LIBRARY_DIR}\""
+  debug "cnvCalling : SAMPLEID is \"${SAMPLEID}\""
+  debug "cnvCalling : NORMCOVBED is : \"${NORMCOVBED}\""
+  debug "cnvCalling : LIST_KDTREE is : \"${LIST_KDTREE}\""
+  debug "cnvCalling : WINDOWS_BED is : \"${WINDOWS_BED}\""
+  debug "cnvCalling : KNN is : \"${KNN}\""
+
+  info "cnvCalling : Arguments checking ..."
+
+  if [ ! -d ${LIBRARY_DIR} ]
   then 
-    #same call for solo without family grep  with nochr
-    ls ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/*.norm.coverage.nochr.bed | cut -d '.' -f 1 | while read SAMPLE
-    do  
-      SEX=`echo "${SAMPLEID}" | join - ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.file.sex.sort.nochr.txt | tr ' ' '\t' | cut -f 3`
-      join ${LIST_KDTREE} ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.file.sex.sort.txt | tr ' ' '\t' | cut -f 2- > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.${KNN}nns.ref.panel.sex.txt
-      ${CLAMMS_DIR}/fit_models ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.${KNN}nns.ref.panel.sex.txt ${WINDOWS_BED} > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.models.bed
-      ${CLAMMS_DIR}/call_cnv ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.norm.coverage.bed ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.models.bed --sex ${SEX} > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.cnv.bed 
-    done
-  else 
-    #same call excluding family with grep with argument $FAMILY_GREP, here for the example B00IX1C and B00IX1B, with nochr
-    ls ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/*.norm.coverage.bed | cut -d '.' -f 1 | while read SAMPLE
-    do  
-      SEX=`echo "${SAMPLEID}" | join - ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.file.sex.sort.txt | tr ' ' '\t' | cut -f 3`
-      join ${LIST_KDTREE} ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.file.sex.sort.txt | tr ' ' '\t' | cut -f 2- > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.${KNN}nns.ref.panel.sex.txt
-      grep -vE "${MUM}" ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.${KNN}nns.ref.panel.sex.txt | grep -vE "${DAD}" >${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.${KNN}nns.ref.panel.sex.familyExcluded.txt
-      ${CLAMMS_DIR}/fit_models ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.${KNN}nns.ref.panel.sex.familyExcluded.txt ${WINDOWS_BED} > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.models.bed
-      ${CLAMMS_DIR}/call_cnv ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.norm.coverage.bed ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.models.bed --sex ${SEX} > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.cnv.bed
-    done
+    error "\"${LIBRARY_DIR}\" does not exist !"
+    help
   fi 
+
+  if ! [[ "${KNN}" =~ ^[0-9]+$ ]]
+  then 
+    error "\"${KNN}\" is not a correct value ! Must be an integer."
+    help 
+  fi 
+  
+  if [ ! -d ${CLAMMS_DIR} ]
+  then 
+    error "\"${CLAMMS_DIR} does not exist !"
+    help 
+  fi 
+
+  if [ ! -f ${LIST_KDTREE} ]
+  then 
+    error "\"${LIST_KDTREE}\"  does not exist !"
+    help 
+  fi 
+
+  if [ ! -f ${WINDOWS_BED} ]
+  then 
+    error "\"${WINDOWS_BED}\" does not exist !"
+    help
+  fi 
+
+  if [ ! -f ${NORMCOVBED} ]
+  then 
+    error "\"${NORMCOVBED}\" does not exist !"
+  fi 
+
+  info "cnvCalling : Arguments are OK !"
+  info "cnvCalling : Begin calling ..." 
+  
+  ls ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/*.norm.coverage.bed |sort | while read FILE
+  do 
+    SAMPLE=$(basename "${FILE}" | cut -d_ -f1 | cut -d. -f1)
+    echo -e -n "${SAMPLE}\t${SAMPLE}.norm.coverage.bed\t"
+    #${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${FILE}\t"
+    grep "Y" ${FILE} | awk '{ x += $4; n++; } END { if (x/n >= 0.1) print "M"; else print "F"; }'
+  done > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/all.file.sex.sort.txt
+
+
+  SAMPLE=$(basename "${NORMCOVBED}" | cut -d_ -f1 | cut -d. -f1)
+  SEX=`echo "${SAMPLE}" | join - ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/all.file.sex.sort.txt | tr ' ' '\t' | cut -f 3`
+  join ${LIST_KDTREE} ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/all.file.sex.sort.txt | tr ' ' '\t' | cut -f 2- > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLE}.${KNN}nns.ref.panel.sex.txt
+  ${CLAMMS_DIR}fit_models ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLE}.${KNN}nns.ref.panel.sex.txt ${WINDOWS_BED} > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLE}.models.bed
+  ${CLAMMS_DIR}call_cnv ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLE}.norm.coverage.bed ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLE}.models.bed --sex ${SEX} > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLE}.cnv.bed 
 
 }
 
@@ -685,33 +926,60 @@ cnvCalling(){
 ############################################
 
 annotation(){
+  
+  LIBRARY_DIR=$1
+  export SAMPLEID=$2 #Sample_name_du_CI
+  BEDTOOLS_PATH=$3
+  HGBED=$4 #/home/puce/resources/hg19/gene_annot_hg19_final.bed annotation.bed
+  HEADER_FILE=$5 #~/PROJECTS/EXOMES/header.annotated.bed or header.herit.annotated.bed 
+  CNV_BED=$6
+  export DAD=$7 #Sample_name_du_pere
+  export MUM=$8 #Sample_name_du_mere
 
-  export CI=$1 #Sample_name_du_CI
-  export DAD=$2 #Sample_name_du_pere
-  export MUM=$3 #Sample_name_du_mere
-  BEDTOOLS_PATH=$4
-  HGBED=$5 #/home/puce/resources/hg19/gene_annot_hg19_final.bed annotation.bed
-  HEADER_FILE=$6 #~/PROJECTS/EXOMES/header.annotated.bed 
+  debug "annotation : LIBRARY_DIR is : \"${LIBRARY_DIR}\""
+  debug "annotation : SAMPLEID is : \"${SAMPLEID}\""
+  debug "annotation : BEDTOOLS_PATH is : \"${BEDTOOLS_PATH}\""
+  debug "annotation : HGBED is : \"${HGBED}\""
+  debug "annotation : HEADER_FILE is : \"${HEADER_FILE}\""
+  debug "annotation : CNV_BED is : \"${CNV_BED}\""
+  debug "annotation : DAD is : \"${DAD}\""
+  debug "annotation : MUM is : \"${MUM}\""
 
-
-
-  #export FAMILY_LIST=`cat $CI_family.text`
   export FAMILY_LIST="${DAD} ${MUM}"   #Argument-liste à donner en debut de run 
   export FAMILY_BED=`sed 's/ /.cnv.bed /g; s/$/.cnv.bed/' <<< ${FAMILY_LIST}` #prevoir le chemin vers les bed
-  export FAMILY_GREP=`sed 's/ /|/g' <<< ${FAMILY_LIST}`
+export FAMILY_GREP=`sed 's/ /|/g' <<< ${FAMILY_LIST}`
 
-  #ALL in 2 lines :
-  ${BEDTOOLS_PATH} intersect -a ${CI}.cnv.bed -b ${FAMILY_BED} -loj -wao | sort -k1,1 -k2,2n | bedtools merge -c 4,5,6,7,8,9,10,24,23,25 -o distinct,distinct,distinct,distinct,distinct,distinct,distinct,collapse,collapse,collapse -delim "|" > ${CI}.HERIT-DN.bed 
+  debug "annotation : FAMILY_LIST is : \"${FAMILY_LIST}}\""
+  debug "annotation : FAMILY_BED is : \"${FAMILY_BED}\""
+  debug "annotation : FAMILY_GREP is \"${FAMILY_GREP}\""
 
-  #add annotated header and annotate
-  cat ~/PROJECTS/EXOMES/header.annotated.bed > ${CI}.HERIT-DN.annotated.bed
+  info "Starting annotation ..."
 
-  #annotate with all data
-  ${BEDTOOLS_PATH} intersect -a ${CI}.HERIT-DN.bed -b ${HGBED} -loj >> ${CI}.HERIT-DN.annotated.bed
+  if [[ (${DAD} == "") || (${MUM} == "") ]]
+  then
+    debug "Not in Dad and Mum condition"
+    # remove unwanted column 
+    cut -f1-10 ${CNV_BED} > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.cut.cnv.bed
 
-  #add size of CNV + link to decipher genome browser
-  awk 'BEGIN { FS = OFS = "\t" }{if(NR>1){print $3-$2,"https://decipher.sanger.ac.uk/browser#q/"$4,$0}else{print}}' ${CI}.HERIT-DN.annotated.bed > ${CI}.HERIT-DN.annotated.final.bed 
-}
+    # create a header
+    cat ${HEADER_FILE} >  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.bed
+    #annotate with all data
+    ${BEDTOOLS_PATH} intersect -a ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.cut.cnv.bed -b ${HGBED} -loj >>  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.bed
+
+    #add size of CNV + link to decipher genome browser
+    awk 'BEGIN { FS = OFS = "\t" }{if(NR>1){print $3-$2,"https://decipher.sanger.ac.uk/browser#q/"$4,$0}else{print}}'  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.bed >  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.final.bed 
+  else 
+    debug "In Dad and Mum condition"
+    ${BEDTOOLS_PATH} intersect -a ${CNV_BED} -b ${FAMILY_BED} -loj | sort -k1,1 -k2,2n | ${BEDTOOLS_PATH} merge -c 4,5,6,7,8,9,10,24,23,25 -o distinct,distinct,distinct,distinct,distinct,distinct,distinct,collapse,collapse,collapse -delim "|" >  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.HERIT-DN.bed 
+    cat ${HEADER_FILE} >  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.HERIT-DN.annotated.bed 
+    ${BEDTOOLS_PATH} intersect -a  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.HERIT-DN.bed -b ${HGBED} -loj >>  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.HERIT-DN.annotated.bed
+
+    awk 'BEGIN { FS = OFS = "\t" }{if(NR>1){print $3-$2,"https://decipher.sanger.ac.uk/browser#q/"$4,$0}else{print}}'  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.HERIT-DN.annotated.bed >  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.HERIT-DN.annotated.final.bed 
+  fi 
+
+  info "Annotation done !"
+
+  }
 
 
 ###########################################################
@@ -745,12 +1013,12 @@ fi
 
 if [ $1 == "metricsMatrixFS" ]
 then 
-  metricsMatrixFS $2 $3
+  metricsMatrixFS $2 $3 $4 $5
 fi 
 
 if [ $1 == "metricsMatrix" ]
 then 
-  metricsMatrix $2 $3 $4 $5 
+  metricsMatrix $2 $3 $4 $5 $6 $7
 fi 
 
 if [ $1 == "dirpreparation" ]
@@ -768,12 +1036,27 @@ then
   esac
 fi 
 
+if [ $1 == "removeRelatives" ]
+then
+ removeRelatives $2 $3 $4
+fi
+
 if [ $1 == "makekdtree" ]
 then 
   makekdtree $2 $3 $4 $5 $6 $7
 fi
 
+if [ ${1} == "cnvCallingFS" ]
+then 
+  cnvCallingFS ${2} ${3} ${4} ${5} ${6}
+fi 
+
 if [ $1 == "cnvCalling" ]
 then 
-  cnvCalling $2 $3 $4 $5 $6 $7 $8 $9 $10 $11
+  cnvCalling $2 $3 $4 $5 $6 $7 
+fi 
+
+if [ $1 == "annotation" ]
+then 
+  annotation $2 $3 $4 $5 $6 $7 $8 $9
 fi 
