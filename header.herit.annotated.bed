@@ -1,1 +1,0 @@
-Size	Decipher	Chr	Start	End	Interval	Sample	CNV_type	Copy_Number	Num_windows	Q_SOME	Q_EXACT	Intersected_in_sample	Intersecting_Interval	Intersecting_CNV_type	#Chr	Start	End	#Gene_name	cytoBand	Phenotypes	Disease_description	Function_description	Tissue_specificity(Uniprot)	del	dup	flag	pLi	pRec	pNull	P(HI)	P(rec)	RVIS_percentile
