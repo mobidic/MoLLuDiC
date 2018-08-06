@@ -103,6 +103,15 @@ singularity run <filename.simg> -i workflow_inputs.json
 ```
 # Troubleshooting
 
+## Using GATK
+
+GATK needs that bed file contains "chr" before chromosome number. Clamms needs no chr before chromosome number. Be careful with your bed data ! 
+
+```bash
+sed 's/^chr//g' yourbedwithchr > bedforclamms.bed"
+sed 's/^/chr/g' yourbedwithoutchr.bed > bedforgatk.bed"
+```
+
 ## For panel capture
 
 Creation of windowsBed need that your capture library.bed got the same chromosome that in the hg19.fa genome.
