@@ -4,7 +4,7 @@
 #
 # Bash script for clamms workflow 
 #
-# By MoBiDic - Version 0.0.1
+# By MoBiDic - Version 0.0.2
 #
 ###########################################################
 
@@ -19,7 +19,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 
-VERSION="0.0.1"
+VERSION="0.0.2"
 VERBOSITY=4
 
 
@@ -28,9 +28,32 @@ VERBOSITY=4
 ###########################################################
 
 help() {
-  echo "Voici l'aide"
+  echo "MoLLuDiC (version ${VERSION}) is a CNV workflow for calling and annotation !"
+  echo "Usage : /.molludic.sh"
+  echo "General arguments : "
+  echo "    help : show this help message"
+  echo "    -v : decrease of increase verbosity level (ERROR : 1 | WARNING : 2 | INFO [default] : 3 | DEBUG : 4)"
+  echo "    "
+  echo "MoLLuDiC is composed of several functions. You print help for each module by typing help after function name."
+  echo "    Example : ./molludic.sh install help"a
+  echo "List of MoLLuDiC's functions : "
+  echo "  dirpreparation <OPTION> : Create folders to use correctly clamms"
+  echo "  install <CLAMM_DIRECTORY> : install Clamms in specific directory"
+  echo "  mapinstall <CLAMM_DIRECTORY> <BigWigToWig_PATH> : install Mapability bed"
+  echo "  windowsBed <CLAMMS_DIRECTORY> <INSERT_SIZE> <INTERVALBEDFILE> <REFFASTA> <CLAMMS_SPECIAL_REGIONS> <LIBRARY_DIRECTORY> : run clamms annotate windows"
+  echo "  normalizeFS <COVERAGE_PATH> <CLAMMS_DIRECTORY> <WINDOWS_BED> <LIBRARY_DIRECTORY> : normalize bed files from scratch"
+  echo "  normalize <CLAMMS_DIRECTORY> <SAMPLEID> <CLAMMSCOVERAGEFILE> <WINDOWS_BED> <LIBRARY_DIRECTORY> : normalize one bed file"
+  echo "  metricsMatrixFS <LIBRARY_DIRECTORY> <HS_FOLDER> <PYTHON_PATH> <MATCH_METRICS> : create kd tre metrics from scratch"
+  echo "  metricsMatrix : <LIBRARY_DIRECTORY> <SAMPLEID> <HSMETRICSTXT> <INSERT_SIZE_METRICS_TXT> <PYTHON_PATH> <MATCH_METRICS> : create kd tree metric for 1 sample"
+  echo "  removeRelatives <ALLKDTREE> <FAMILYLIST> <LIBRARY_DIRECTORY> : remove relatives from all kd tree file"
+  echo "  makekdtree <RSCRIPT_PATH> <RSCRIPT_FILE> <KNN> <ALL_TREE> <LIBRARY_DIRECTORY> <FROM_SCRATCH> : use Rscript to do kd tree"
+  echo "  cnvCallingFS <CLAMMS_DIRECTORY> <LIBRARY_DIRECTORY> <LIST_KDTREE> <WINDOWS_BED> <KNN> : do calling from scratch"
+  echo "  cnvCalling <CLAMMS_DIRECTORY> <LIBRARY_DIRECTORY> <NORMCOVBED> <LIST_KDTREE> <WINDOWS_BED> <KNN> : do calling for 1 sample"
+  echo "  annotation <LIBRARY_DIRECTORY> <SAMPLEID> <BEDTOOLS_PATH> <HGBED> <HEADER_FILE> <CNV_BED> <DAD> (optional) <MUM> (optiona) : annotate cnv bed file"
+  echo " "
   exit 1
 }
+
 
 ###########################################################
 # Log
@@ -671,9 +694,9 @@ metricsMatrix() {
 
 removeRelatives() {
 
-export  ALLKDTREE=$1
-export  FAMILYLIST=$2
-export  LIBRARY_DIR=$3
+  export  ALLKDTREE=$1
+  export  FAMILYLIST=$2
+  export  LIBRARY_DIR=$3
 
   debug "removeRelatives : LIBRARY_DIR is : \"${LIBRARY_DIR}\""
   debug "removeRelatives : FAMILYLIST is : \"${FAMILYLIST}\""
@@ -987,7 +1010,7 @@ annotation(){
 
   export FAMILY_LIST="${DAD} ${MUM}"   #Argument-liste à donner en debut de run 
   export FAMILY_BED=`sed 's/ /.cnv.bed /g; s/$/.cnv.bed/' <<< ${FAMILY_LIST}` #prevoir le chemin vers les bed
-export FAMILY_GREP=`sed 's/ /|/g' <<< ${FAMILY_LIST}`
+  export FAMILY_GREP=`sed 's/ /|/g' <<< ${FAMILY_LIST}`
 
   debug "annotation : FAMILY_LIST is : \"${FAMILY_LIST}}\""
   debug "annotation : FAMILY_BED is : \"${FAMILY_BED}\""
