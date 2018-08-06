@@ -9,7 +9,7 @@
 	- [Quick start](#quick-start)
 
 --------------------------------------------------------------------------------
-<img src="molludic.png" width="150">
+<img src="logos/molludic.png" width="150">
 
 The **MoBiDiC capture CNV** calling, annotation and interpretation tools based on clamms workflow [https://github.com/rgcgithub/clamms](https://github.com/rgcgithub/clamms). 
 
