@@ -211,33 +211,39 @@ dirpreparation() {
 # -- Command : ./clamms_workflow.sh install /PATH/TO/Install
 
 install() {
-  
-  CLAMMS_DIR=$1
-  
-  debug "install : Installation PATH of clamms is : \"${CLAMMS_DIR}\""
 
-  info "install : Checking installation directory of clamms..."
-
-  # - Check if /PATH/TO/Install exists else create directory
-  if [ ! -d ${CLAMMS_DIR} ] 
+  if [ $1 == "help" ]
   then 
-    warning "\"${CLAMMS_DIR}\" does not exist. \"${CLAMMS_DIR}\" was created"
-    mkdir ${CLAMMS_DIR}
-    mk
-    help
+    echo "MoLLuDiC (version ${VERSION}) install help !"
+    echo "Usage : ./molludic install <CLAMMS_DIRECTORY>"
+    echo "    <CLAMMS_DIRECTORY> : Directory where you want to install Clamms."
+    echo " "
+    exit 1
+  else
+
+    CLAMMS_DIR=$1
+    debug "install : Installation PATH of clamms is : \"${CLAMMS_DIR}\""
+    info "install : Checking installation directory of clamms..."
+
+    # - Check if /PATH/TO/Install exists else create directory
+    if [ ! -d ${CLAMMS_DIR} ] 
+    then 
+      warning "\"${CLAMMS_DIR}\" does not exist. \"${CLAMMS_DIR}\" was created"
+      dirpreparation clamms ${CLAMMS_DIR}
+    fi
+    info "... Argument Checking : OK"
+
+    info "Starting git clone of CLAMMS repo..."
+    cd ${CLAMMS_DIR}
+    git clone https://github.com/rgcgithub/clamms.git
+    mv clamms/* .
+    rm -rf clamms
+    info "... Done"
+
+    info "Lauching Make ..."
+    make
+    info "... Done"
   fi
-  info "... Argument Checking : OK"
-
-  info "Starting git clone of CLAMMS repo..."
-  cd ${CLAMMS_DIR}
-  git clone https://github.com/rgcgithub/clamms.git
-  mv clamms/* .
-  rm -rf clamms
-  info "... Done"
-
-  info "Lauching Make ..."
-  make
-  info "... Done"
 }
 
 ###########################################################
