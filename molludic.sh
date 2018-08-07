@@ -143,9 +143,10 @@ dirpreparation() {
       ;;
 
     all)
-      CLAMM_DIR=$2
+      CLAMMS_DIR=$2
       LIBRARY_NAME=$3
       INSER_SIZE=$4
+      LIBRARY_DIR=${CLAMMS_DIR}lib4Clamms/${LIBRARY_NAME}
       ddebug "dirpreparation library : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
       debug "dirpreparation library : LIBRARY_NAME is : \"${LIBRARY_NAME}\""
       mkdir ${CLAMMS_DIR}
@@ -176,6 +177,19 @@ dirpreparation() {
         exit 1
       fi
       mkdir ${LIBRARY_DIR}windowsBeds/insertSize${INSERT_SIZE}/
+      ;;
+
+    help)
+      echo "MoLLuDiC (version ${VERSION}) dirpreparation help !"
+      echo "Usage : ./molludic.sh dirpreparation <OPTION> <other argument depending on OPTION."
+      echo "Several OPTION available :"
+      echo "    1 - ./molludic.sh dirpreparation clamms <CLAMMS_DIRECTORY> : With clamms option you will create library directories for clamms in <CLAMMS_DIRECTORY>. Use it if it is your first time."
+      echo "    2 - ./molludic.sh dirpreparation library <CLAMMS_DIRECTORY> <LIBRARY_NAME> : With library option you will create your <LIBRARY_NAME> in your <CLAMMS_DIRECTORY>. Use it if you want to create a new library."
+      echo "    3 - ./molludic.sh dirpreparation size <LIBRARY_DIRECTORY> <INSER_SIZE> : With size option you will create insert size folder in your <LIBRARY_DIRECTORY>, generated with library option (2). Use it if you want tu use new insert size."
+      echo "    4 - ./molludic.sh dirpreparation all <CLAMMS_DIRECTORY> <LIBRARY_NAME> <INSERT_SIZE> : Do all previous steps. Use it if you want to create your CLAMMS_DIRECTORY, LIBRARY and INSERT_SIZE folder at once."
+      echo "    5 - ./molludic.sh dirpreparation help : To print this message."
+      echo " "
+      exit 1
       ;;
 
     *)
@@ -1066,6 +1080,13 @@ case $1 in
         ;;
       all)
         dirpreparation all $3 $4 $5
+        ;;
+      help)
+        dirpreparation help
+        ;;
+      *)
+        error "Incorrect arguments \"$2\""
+        dirpreparation help;
         ;;
     esac
     ;;
