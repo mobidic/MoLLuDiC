@@ -123,4 +123,16 @@ To create a specific hg19.fa genome without selected chromosome, please find a s
 sed '/chr13/,/chr14/{//!d}' /usr/local/share/refData/genome/hg19/hg19.fa | grep -v "chr13" |  sed '/chr21/,/chr22/{//!d}' |  sed '/chr22/,/chrX/{//!d}' | grep -v "chr21" | grep -v "chr22" | sed 's/chr//g' > hg19_moins132122_nochr.fa
 
 ```
+--------------------------------------------------------------------------------
 
+**Montpellier Bioinformatique pour le Diagnostique Clinique (MoBiDiC)**
+
+*CHU de Montpellier*
+
+France
+
+![MoBiDiC](doc/img/logo-mobidic.png)
+
+[Visit our website](https://neuro-2.iurc.montp.inserm.fr/mobidic/)
+
+--------------------------------------------------------------------------------
