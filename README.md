@@ -31,6 +31,8 @@ We propose an **exportable WDL workflow** based on open source tools and open so
 
 ## Main workflow
 
+![molludic workflow description](MoLLuDiC_workflow.svg)
+
 - Select mode : "from scratch" to process all your data or "routine" to process new samples
 - Select a library : capture from panel to whole exome sequencing
 - Remove batch effect : Selection of a cluster of X most identical sample within 7 technical parameters (SEX, AT and GC Dropout, Mean Insert Size, Percentage of targeted base covered with 10X and 50X...) via a statistical method named k-d Tree.
