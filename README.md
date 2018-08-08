@@ -31,7 +31,7 @@ We propose an **exportable WDL workflow** based on open source tools and open so
 
 ## Main workflow
 
-![molludic workflow description](MoLLuDiC_workflow.svg)
+![molludic workflow description](molludic_workflow.svg)
 
 - Select mode : "from scratch" to process all your data or "routine" to process new samples
 - Select a library : capture from panel to whole exome sequencing
