@@ -1,12 +1,15 @@
 # MoLLuDIC
 - [MoLLuDiC - a CNV Exome pipeline adapted from clamms ](#MoLLuDiC)
 	- [Overview](#overview)
+		- [Main Workflow](#main-workflow)
 		- [Citing MoLLuDiC](#citing-molludic)
 		- [Input](#input)
 		- [Output](#output)
 	- [Installation](#installation)
 		- [Requirements](#requirements)
-	- [Quick start](#quick-start)
+	- [MoLLuDiC command](#molludic-command)
+		- [MoLLuDiC Container](#molludic-container)
+	- [Troubleshooting](#troubleshooting)
 
 --------------------------------------------------------------------------------
 <img src="logos/molludic.png" width="150">
@@ -33,6 +36,7 @@ We propose an **exportable WDL workflow** based on open source tools and open so
 
 ![molludic workflow description](molludic_workflow.svg)
 
+molludic.sh
 - Select mode : "from scratch" to process all your data or "routine" to process new samples
 - Select a library : capture from panel to whole exome sequencing
 - Remove batch effect : Selection of a cluster of X most identical sample within 7 technical parameters (SEX, AT and GC Dropout, Mean Insert Size, Percentage of targeted base covered with 10X and 50X...) via a statistical method named k-d Tree.
@@ -65,19 +69,7 @@ Currently, the tree is hosted on github, and can be obtained via:
 ```bash
 $ git clone https://github.com/mobidic/MoLLuDiC.git
 ```
-## Create Singularity Image
-**  First, build**
-```bash
-singularity build <filename.simg> Singulairity 
-```
-**Then run**
-```bash
-singularity run <filename.simg> -i workflow_inputs.json
-```
-**Singularity help**
-```bash
-singularity help <filename.simg>
-```
+
 ## Requirements 
 
 - Linux OS
@@ -87,22 +79,37 @@ singularity help <filename.simg>
 - python 3
 - bedtools (v2.27.1)
 - R software and the FNN package install.packages("FNN")
-- Singularity
 
-
-# Quick start
-
-## From Scratch workflow
+# MoLLuDiC command
 
 ```bash
-singularity run  <filename.simg> -i workflow_inputs.json```
-```
+  MoLLuDiC (version ${VERSION}) is a CNV workflow for calling and annotation !
+  Usage : /.molludic.sh
+ General arguments : 
+      help : show this help message
+    -v : decrease of increase verbosity level (ERROR : 1 | WARNING : 2 | INFO [default] : 3 | DEBUG : 4)
 
-## NGS routine workflow
-
-```bash
-singularity run <filename.simg> -i workflow_inputs.json
+MoLLuDiC is composed of several functions. You print help for each module by typing help after function name.
+    Example : ./molludic.sh install help
+List of MoLLuDiC's functions : 
+  dirpreparation <OPTION> : Create folders to use correctly clamms
+  install <CLAMM_DIRECTORY> : install Clamms in specific directory
+  mapinstall <CLAMM_DIRECTORY> <BigWigToWig_PATH> : create Mapability bed
+  windowsBed <CLAMMS_DIRECTORY> <INSERT_SIZE> <INTERVALBEDFILE> <REFFASTA> <CLAMMS_SPECIAL_REGIONS> <LIBRARY_DIRECTORY> : run clamms annotate windows
+  normalizeFS <COVERAGE_PATH> <CLAMMS_DIRECTORY> <WINDOWS_BED> <LIBRARY_DIRECTORY> : normalize bed files from scratch
+  normalize <CLAMMS_DIRECTORY> <SAMPLEID> <CLAMMSCOVERAGEFILE> <WINDOWS_BED> <LIBRARY_DIRECTORY> : normalize one bed file
+  metricsMatrixFS <LIBRARY_DIRECTORY> <HS_FOLDER> <PYTHON_PATH> <MATCH_METRICS> : create kd tree metrics from scratch
+  metricsMatrix : <LIBRARY_DIRECTORY> <SAMPLEID> <HSMETRICSTXT> <INSERT_SIZE_METRICS_TXT> <PYTHON_PATH> <MATCH_METRICS> : create kd tree metric for 1 sample
+  removeRelatives <ALLKDTREE> <FAMILYLIST> <LIBRARY_DIRECTORY> : remove relatives from all kd tree file
+  makekdtree <RSCRIPT_PATH> <RSCRIPT_FILE> <KNN> <ALL_TREE> <LIBRARY_DIRECTORY> <FROM_SCRATCH> : use Rscript to do kd tree
+  cnvCallingFS <CLAMMS_DIRECTORY> <LIBRARY_DIRECTORY> <LIST_KDTREE> <WINDOWS_BED> <KNN> : do calling from scratch
+  cnvCalling <CLAMMS_DIRECTORY> <LIBRARY_DIRECTORY> <NORMCOVBED> <LIST_KDTREE> <WINDOWS_BED> <KNN> : do calling for 1 sample
+  annotation <LIBRARY_DIRECTORY> <SAMPLEID> <BEDTOOLS_PATH> <HGBED> <HEADER_FILE> <CNV_BED> <DAD> (optional) <MUM> (optional) : annotate cnv bed file
 ```
+## MoLLuDiC Container
+
+Soon, you will be able to launch MoLLuDiC via a singularity container.
+
 # Troubleshooting
 
 ## Using GATK
