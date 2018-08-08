@@ -131,7 +131,7 @@ sed '/chr13/,/chr14/{//!d}' /usr/local/share/refData/genome/hg19/hg19.fa | grep 
 
 France
 
-![MoBiDiC](doc/img/logo-mobidic.png)
+![MoBiDiC](logos/logo-mobidic.png)
 
 [Visit our website](https://neuro-2.iurc.montp.inserm.fr/mobidic/)
 
