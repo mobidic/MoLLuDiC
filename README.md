@@ -12,7 +12,7 @@
 	- [Troubleshooting](#troubleshooting)
 
 --------------------------------------------------------------------------------
-<img src="logos/molludic.png" width="150">
+<img src="img/molludic.png" width="150">
 
 The **MoBiDiC capture CNV** calling, annotation and interpretation tools based on clamms workflow [https://github.com/rgcgithub/clamms](https://github.com/rgcgithub/clamms). 
 
@@ -34,7 +34,7 @@ We propose an **exportable WDL workflow** based on open source tools and open so
 
 ## Main workflow
 
-![molludic workflow description](molludic_workflow.svg)
+![molludic workflow description](img/molludic_workflow.svg)
 
 molludic.sh
 - Select mode : "from scratch" to process all your data or "routine" to process new samples
