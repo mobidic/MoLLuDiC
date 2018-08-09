@@ -201,21 +201,16 @@ dirpreparation() {
 }
 
 
-
-
 ###########################################################
 # INSTALL 
 ###########################################################
-
-#Main steps for CNV calling by clamms (https://github.com/rgcgithub/clamms)
-# -- Command : ./clamms_workflow.sh install /PATH/TO/Install
 
 install() {
 
   if [ $1 == "help" ]
   then 
     echo "MoLLuDiC (version ${VERSION}) install help !"
-    echo "Usage : ./molludic install <CLAMMS_DIRECTORY>"
+    echo "Usage : ./molludic.sh install <CLAMMS_DIRECTORY>"
     echo "    <CLAMMS_DIRECTORY> : Directory where you want to install Clamms."
     echo " "
     exit 1
@@ -247,171 +242,187 @@ install() {
 }
 
 ###########################################################
-# MAPABILITY INSTALL - 1T
+# MAPABILITY INSTALL 
 ###########################################################
 
-# -- Command : ./clamms_workflow.sh mapinstall /PATH/TO/CLAMMS_DIR /PATH/TO/BigWigToWig
-
 mapinstall() {
-  
-  CLAMMS_DIR=$1
-  INSTALLATION_PATH=${CLAMMS_DIR}lib4Clamms/hg19
-  BW2W_PATH=$2
-  
-  debug "mapinstall : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
-  debug "mapinstall : INSTALLATION_PATH of mapability is : \"${INSTALLATION_PATH}\""
-  debug "mapinstall : BW2W_PATH is : \"${BW2W_PATH}\""
 
-  info "Checking mapinstall's arguments ..."
-  # - Check if /PATH/TO/INSTALL exists else create directory
-  if [ ! -d ${INSTALLATION_PATH} ]
-  then 
-    warning "\"${INSTALLATION_PATH}\" doens't exist. \"${INSTALLATION_PATH}\" was created"
-    mkdir ${CLAMMS_DIR}
-    mkdir ${CLAMMS_DIR}lib4Clamms
-    mkdir ${CLAMMS_DIR}lib4Clamms/hg19
-  fi 
-  # - Check if /PATH/TO/bigWigToWig exists
-  if [ ! -f ${BW2W_PATH} ]
-  then 
-    error "\"${BW2W_PATH}\" is not a correct PATH to BigWigToWig !"
-    help
-  fi 
-  # - Check if /PATH/TO/bigWigToWig is a PATH to the soft
-  if ! [[ "${BW2W_PATH}" =~ bigWigToWig$ ]]
-  then 
-    error "\"${BW2W_PATH}\" is not bigWigToWig ! Please chose a correct PATH."
-    help 
-  fi 
-  info "... Arguments checking done"
+  if [ $1 =="help" ]
+  then
+    echo "MoLLuDiC (version ${VERSION} mapinstall help !"
+    echo "Usage ./molludic.sh mapinstall <CLAMMS_DIRECTORY> <BW2W_PATH>"
+    echo "    <CLAMMS_DIRECTORY> : Directory of Clamms."
+    echo "    <BW2W_PATH> : Path to BigWigToWig."
+    echo " "
+    exit 1
 
-  info "Installing Mapability ..."
-  cd ${INSTALLATION_PATH}
-  wget http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeMapability/wgEncodeCrgMapabilityAlign100mer.bigWig
-  ${BW2W_PATH} wgEncodeCrgMapabilityAlign100mer.bigWig wgEncodeCrgMapabilityAlign100mer.wig
-  grep -v '^#' wgEncodeCrgMapabilityAlign100mer.wig | sed 's/^chr//g' > mappability.bed
-  info "... Done !"
+  else 
+  
+    CLAMMS_DIR=$1
+    INSTALLATION_PATH=${CLAMMS_DIR}lib4Clamms/hg19
+    BW2W_PATH=$2
+    
+    debug "mapinstall : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
+    debug "mapinstall : INSTALLATION_PATH of mapability is : \"${INSTALLATION_PATH}\""
+    debug "mapinstall : BW2W_PATH is : \"${BW2W_PATH}\""
+
+    info "Checking mapinstall's arguments ..."
+    # - Check if /PATH/TO/INSTALL exists else create directory
+    if [ ! -d ${INSTALLATION_PATH} ]
+    then 
+      warning "\"${INSTALLATION_PATH}\" doens't exist. \"${INSTALLATION_PATH}\" was created"
+      dirpreparation clamms ${CLAMMS_DIR}
+    fi 
+    # - Check if /PATH/TO/bigWigToWig exists
+    if [ ! -f ${BW2W_PATH} ]
+    then 
+      error "\"${BW2W_PATH}\" is not a correct PATH to BigWigToWig !"
+      mapinstall help 
+    fi 
+    # - Check if /PATH/TO/bigWigToWig is a PATH to the soft
+    if ! [[ "${BW2W_PATH}" =~ bigWigToWig$ ]]
+    then 
+      error "\"${BW2W_PATH}\" is not bigWigToWig ! Please chose a correct PATH."
+      mapinstall help 
+    fi 
+    info "... Arguments checking done"
+
+    info "Installing Mapability ..."
+    cd ${INSTALLATION_PATH}
+    wget http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeMapability/wgEncodeCrgMapabilityAlign100mer.bigWig
+    ${BW2W_PATH} wgEncodeCrgMapabilityAlign100mer.bigWig wgEncodeCrgMapabilityAlign100mer.wig
+    grep -v '^#' wgEncodeCrgMapabilityAlign100mer.wig | sed 's/^chr//g' > mappability.bed
+    info "... Done !"
+
+  fi 
 
 }
 
 
 ###########################################################
-# CREATE WINDOWS BED - 1T
+# CREATE WINDOWS BED
 ###########################################################
-# -- Command : ./clamms_workflow.sh windowsBed CLAMMS_DIR INSERT_SIZE INTERVALBEDFILE REFFASTA CLAMMS_SPECIAL_REGIONS LIBRARY_DIR
-
-#A faire tourner avec "chr", enlever "chr" en sortie du windows.bed
-#le github préconise de faire tourner sans le "chr" => prevoir un genome fasta sans chr
-#pour l'insert size prevoir un peu plus long que le fragment size ex: 200pb -> 250pb
 
 windowsBed() {
-
-  export CLAMMS_DIR=$1
-  export INSERT_SIZE=$2
-  INTERVALBEDFILE=$3
-  REFFASTA=$4
-  #REF = CLAMMS_DIR/lib4CLAMMS/hg19
-  CLAMMS_SPECIAL_REGIONS=$5
-  #CLAMMS_DIR/data
-  LIBRARY_DIR=$6
   
-  debug "windowsBed : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
-  debug "windowsBed : INSERT_SIZE is : \"${INSERT_SIZE}\""
-  debug "windowsBed : INTERVALBEDFILE is : \"${INTERVALBEDFILE}\""
-  debug "windowsBed : REFFASTA is : \"${REFFASTA}\""
-  debug "windowsBed : CLAMMS_SPECIAL_REGIONS is : \"${CLAMMS_SPECIAL_REGIONS}\""
-  debug "windowsBed : LIBRARY_DIR is : \"${LIBRARY_DIR}\""
+  if [ $1 == "help" ]
+  then 
+    echo "MoLLuDiC (version ${VERSION}) windowsBed help !"
+    echo "Usage ./molludic.sh windowsbed <CLAMMS_DIRECTORY> <LIBRARY_NAME> <INSERT_SIZE> <INTERVALBEDFILE> <REFFASTA> <CLAMMS_SPECIAL_REGIONS>"
+    echo "    <CLAMMS_DIRECTORY> : Directory where Clamms is installed."
+    echo "    <LIBRARY_NAME> : CNV Library you want to use."
+    echo "    <INSERT_SIZE> : Size of insert."
+    echo "    <INTERVALBEDFILE> : Bed file of the library."
+    echo "    <REFFASTA> : Reference genome in fasta format."
+    echo "    <CLAMMS_SPECIAL_REGIONS> : Bed file in git repo of Clamms."
+    exit 1
+  else 
 
-  info "Checking windowsBed's arguments..."
-  # - If exists
-  ## - Check if /PATH/TO/CLAMS exists
-  if [ ! -d ${CLAMMS_DIR} ]
-  then 
-    error "\"${CLAMMS_DIR}\" is not a correct path to clams directory"
-    help 
-  fi 
-  ## - Check if /PATH/TO/annotate_windows.sh exists 
-  if [ ! -f "${CLAMMS_DIR}annotate_windows.sh" ]
-  then 
-    error "\"annotate_windows.sh\" in \"${CLAMMS_DIR}\" does not exist !"
-    help 
-  fi 
-  ## - Check if INSERT_SIZE >= 100s 
-  if [ ! ${INSERT_SIZE} -ge 100 ]
-  then 
-    error "\"${INSERT_SIZE}\" have to be greater than 100 !"
-    help 
-  fi 
-  ## - Check if INSER_SIZE is an integer
-  if ! [[ "${INSERT_SIZE}" =~ ^[0-9]+$ ]]
-  then 
-    error "\"${INSERT_SIZE}\" is not an integer !"
-    help 
-  fi
-  ## - Check if INTERVALBEDFILE exists
-  if [ ! -f ${INTERVALBEDFILE} ]
-  then 
-    error "\"${INTERVALBEDFILE}\" does not exist !"
-    help 
-  fi 
-  ## - Check if REFFASTA exists
-  if [ ! -f ${REFFASTA} ]
-  then 
-    error "\"${REFFASTA}\" does not exist !"
-    help 
-  fi 
-  ## - Check if CLAMMS_SPECIAL_REGIONS exists
-  if [ ! -f ${CLAMMS_SPECIAL_REGIONS} ]
-  then 
-    error "\"${CLAMMS_SPECIAL_REGIONS}\" does not exist !"
-    help
-  fi 
-  ## - Check if LIBRARY_DIR exists 
-  if [ ! -d ${LIBRARY_DIR} ]
-  then 
-    error "\"${LIBRARY_DIR}\" does not exist !"
-    help 
-  fi
+    export CLAMMS_DIR=$1
+    LIBRARY_NAME=$2
+    export INSERT_SIZE=$3
+    INTERVALBEDFILE=$4
+    REFFASTA=$5
+    CLAMMS_SPECIAL_REGIONS=$6
+    LIBRARY_DIR=${CLAMMS_DIR}lib4Clamms/${LIBRARY_NAME}/
 
-  # - Extension checking
-  
-  if [[ ${INTERVALBEDFILE##*\.} != "bed" ]]
-  then 
-    error "\"${INTERVALBEDFILE}\" must be .bed file !"
+    debug "windowsBed : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
+    debug "windowsBed : INSERT_SIZE is : \"${INSERT_SIZE}\""
+    debug "windowsBed : INTERVALBEDFILE is : \"${INTERVALBEDFILE}\""
+    debug "windowsBed : REFFASTA is : \"${REFFASTA}\""
+    debug "windowsBed : CLAMMS_SPECIAL_REGIONS is : \"${CLAMMS_SPECIAL_REGIONS}\""
+    debug "windowsBed : LIBRARY_NAME is : \"${LIBRARY_NAME}\""
+
+    info "Checking windowsBed's arguments..."
+    # - If exists
+    ## - Check if /PATH/TO/CLAMS exists
+    if [ ! -d ${CLAMMS_DIR} ]
+    then 
+      error "\"${CLAMMS_DIR}\" is not a correct path to clams directory"
+      help 
+    fi 
+    ## - Check if /PATH/TO/annotate_windows.sh exists 
+    if [ ! -f "${CLAMMS_DIR}annotate_windows.sh" ]
+    then 
+      error "\"annotate_windows.sh\" in \"${CLAMMS_DIR}\" does not exist !"
+      help 
+    fi 
+    ## - Check if INSERT_SIZE >= 100s 
+    if [ ! ${INSERT_SIZE} -ge 100 ]
+    then 
+      error "\"${INSERT_SIZE}\" have to be greater than 100 !"
+      help 
+    fi 
+    ## - Check if INSER_SIZE is an integer
+    if ! [[ "${INSERT_SIZE}" =~ ^[0-9]+$ ]]
+    then 
+      error "\"${INSERT_SIZE}\" is not an integer !"
+      help 
+    fi
+    ## - Check if INTERVALBEDFILE exists
+    if [ ! -f ${INTERVALBEDFILE} ]
+    then 
+      error "\"${INTERVALBEDFILE}\" does not exist !"
+      help 
+    fi 
+    ## - Check if REFFASTA exists
+    if [ ! -f ${REFFASTA} ]
+    then 
+      error "\"${REFFASTA}\" does not exist !"
+      help 
+    fi 
+    ## - Check if CLAMMS_SPECIAL_REGIONS exists
+    if [ ! -f ${CLAMMS_SPECIAL_REGIONS} ]
+    then 
+      error "\"${CLAMMS_SPECIAL_REGIONS}\" does not exist !"
+      help
+    fi 
+    ## - Check if LIBRARY_DIR exists 
+    if [ ! -d ${LIBRARY_DIR} ]
+    then 
+      error "\"${LIBRARY_DIR}\" does not exist !"
+      help 
+    fi
+
+    # - Extension checking
+    
+    if [[ ${INTERVALBEDFILE##*\.} != "bed" ]]
+    then 
+      error "\"${INTERVALBEDFILE}\" must be .bed file !"
+    fi 
+
+    if [[ ${REFFASTA##*\.} != "fa" ]]
+    then
+      error "\"${REFFASTA}\" must be .fa file !"
+    fi 
+
+    if [[ ${CLAMMS_SPECIAL_REGIONS##*\.} != "bed" ]]
+    then 
+      error "\"${CLAMMS_SPECIAL_REGIONS}\" must be .bed file !"
+    fi 
+    info "... Argument checking : done !"
+
+    info "Launching annotate_windows.sh ..."
+    # - Mkdir if insertSize${INSERT_SIZE} does not exist
+
+    if [ ! -d ${LIBRARY_DIR}windowsBeds ]
+    then
+      warning "\"${LIBRARY_DIR}windowsBeds \" does not exist but was created !  "
+      mkdir ${LIBRARY_DIR}windowsBeds
+    fi
+    
+    if [ ! -d ${LIBRARY_DIR}windowsBeds/insertSize${INSERT_SIZE} ]
+    then 
+      warning "\"${LIBRARY_DIR}windowsBeds/insertSize${INSERT_SIZE}\" does not exist but was created !  "
+      mkdir ${LIBRARY_DIR}windowsBeds/insertSize${INSERT_SIZE}
+    fi 
+    # - Sort INTERVALBEDFILE and sed chr column of the resulting file
+    sort -k1,1 -k2,2n ${INTERVALBEDFILE} | sed 's/^chr//g'> ${LIBRARY_DIR}interval_sort_nochr.bed
+
+    # - Run annotate_windows
+    ${CLAMMS_DIR}annotate_windows.sh ${LIBRARY_DIR}interval_sort_nochr.bed ${REFFASTA} ${CLAMMS_DIR}/lib4Clamms/hg19/mappability.bed ${INSERT_SIZE} ${CLAMMS_SPECIAL_REGIONS} > ${LIBRARY_DIR}windowsBeds/insertSize${INSERT_SIZE}/windows_nochr_${INSERT_SIZE}pb.bed
+    info "... annotate_windows.sh done !"
   fi 
-
-  if [[ ${REFFASTA##*\.} != "fa" ]]
-  then
-    error "\"${REFFASTA}\" must be .fa file !"
-  fi 
-
-  if [[ ${CLAMMS_SPECIAL_REGIONS##*\.} != "bed" ]]
-  then 
-    error "\"${CLAMMS_SPECIAL_REGIONS}\" must be .bed file !"
-  fi 
-  info "... Argument checking : done !"
-
-  info "Launching annotate_windows.sh ..."
-  chmod +x ${CLAMMS_DIR}annotate_windows.sh
-  # - Mkdir if insertSize${INSERT_SIZE} does not exist
-
-if [ ! -d ${LIBRARY_DIR}windowsBeds ]
-  then
-    echo "\"${LIBRARY_DIR}windowsBeds \" does not exist but was created !  "
-    mkdir ${LIBRARY_DIR}windowsBeds
-  fi
-  
-if [ ! -d ${LIBRARY_DIR}windowsBeds/insertSize${INSERT_SIZE} ]
-  then 
-    echo "\"${LIBRARY_DIR}windowsBeds/insertSize${INSERT_SIZE}\" does not exist but was created !  "
-    mkdir ${LIBRARY_DIR}windowsBeds/insertSize${INSERT_SIZE}
-  fi 
-  # - Sort INTERVALBEDFILE and sed chr column of the resulting file
-  sort -k1,1 -k2,2n ${INTERVALBEDFILE} | sed 's/^chr//g'> ${LIBRARY_DIR}interval_sort_nochr.bed
-
-  # - Run annotate_windows
-  ${CLAMMS_DIR}annotate_windows.sh ${LIBRARY_DIR}interval_sort_nochr.bed ${REFFASTA} ${CLAMMS_DIR}/lib4Clamms/hg19/mappability.bed ${INSERT_SIZE} ${CLAMMS_SPECIAL_REGIONS} > ${LIBRARY_DIR}windowsBeds/insertSize${INSERT_SIZE}/windows_nochr_${INSERT_SIZE}pb.bed
-  info "... annotate_windows.sh done !"
 }
 
 
@@ -420,115 +431,136 @@ if [ ! -d ${LIBRARY_DIR}windowsBeds/insertSize${INSERT_SIZE} ]
 # NORMALIZE COVERAGE DATA
 ###########################################################
 
-# -- After Samtools 
 
 normalizeFS() {
 
-  # - Command ./clams.sh normalizeFS /PATH/TO/coverage /PATH/TO/clams_dir /PATH/TO/WINDOWS_BED
-
-  export COVERAGE_PATH=$1
-  export CLAMMS_DIR=$2
-  export WINDOWS_BED=$3
-  export LIBRARY_DIR=$4
-
-  debug "normalizeFS : COVERAGE_PATH is : \"${COVERAGE_PATH}\""
-  debug "normalizeFS : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
-  debug "normalizeFS : WINDOWS_BED is : \"${WINDOWS_BED}\""
-  debug "normalizeFS : LIBRARY_DIR : \"${LIBRARY_DIR}\""
- 
-  info "Checking normalize's arguments ..."
-
-  # - Check if Coverage Path exists 
-  if [ ! -d ${COVERAGE_PATH} ]
-  then
-    error "\"${COVERAGE_PATH}\" does not exist !"
-    help 
-  fi 
-  
-  # - Check if CLAMMS_DIR exists
-  if [ ! -d ${CLAMMS_DIR} ]
+  if [ $1 == "help" ]
   then 
-    error "\"${CLAMMS_DIR}\" does not exist ! "
-    help 
+    echo "MoLLuDiC (version ${VERSION}) normalizeFS help !"
+    echo "Usage ./molludic.sh normalizeFS <CLAMMS_DIRECTORY> <LIBRARY_NAME> <COVERAGE_PATH> <WINDOWS_BED>"
+    echo "    <CLAMMS_DIRECTORY> : Directory where Clamms is installed."
+    echo "    <LIBRARY_NAME> : CNV library you want to use."
+    echo "    <COVERAGE_PATH> : Path to directory which contains coverage bed files."
+    echo "    <WINDOWS_BED> : Bed file generated by windowsBed function (./molludic.sh windowsBed help for more informations)."
+    exit 1
+  else
+
+    export CLAMMS_DIR=$1
+    LIBRARY_NAME=$2
+    export COVERAGE_PATH=$1
+    export WINDOWS_BED=$3
+    export LIBRARY_DIR=${CLAMMS_DIR}lib4Clamms/${LIBRARY_NAME}
+
+    debug "normalizeFS : COVERAGE_PATH is : \"${COVERAGE_PATH}\""
+    debug "normalizeFS : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
+    debug "normalizeFS : WINDOWS_BED is : \"${WINDOWS_BED}\""
+    debug "normalizeFS : LIBRARY_DIR : \"${LIBRARY_DIR}\""
+ 
+    info "Checking normalize's arguments ..."
+
+    # - Check if Coverage Path exists 
+    if [ ! -d ${COVERAGE_PATH} ]
+    then
+      error "\"${COVERAGE_PATH}\" does not exist !"
+      help 
+    fi 
+    
+    # - Check if CLAMMS_DIR exists
+    if [ ! -d ${CLAMMS_DIR} ]
+    then 
+      error "\"${CLAMMS_DIR}\" does not exist ! "
+      help 
+    fi 
+
+    # - Check if WINDOWS_BED exists 
+    if [ ! -f ${WINDOWS_BED} ]
+    then
+      error "\"${WINDOWS_BED}\" does not exist ! "
+      help
+    fi
+
+    info "... Argument checking : done !"
+    info "Lauching normalize and removing "chr" in first column ..."
+    # Think to do, remove or not theese files in COVERAGE_PATH
+    for i in ${COVERAGE_PATH}*.bed; do sed 's/^chr//g' $i > ${COVERAGE_PATH}$(basename "$i" | cut -d_ -f1 | cut -d. -f1).clamms.coverage.bed ; done
+    ls *.clamms.coverage.bed | cut -d '.' -f 1 | while read SAMPLEID ; do  ${CLAMMS_DIR}normalize_coverage ${SAMPLEID}.clamms.coverage.bed $WINDOWS_BED > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.norm.coverage.bed ;done
+
+    info "... normalize Done !"
   fi 
-
-  # - Check if WINDOWS_BED exists 
-  if [ ! -f ${WINDOWS_BED} ]
-  then
-    error "\"${WINDOWS_BED}\" does not exist ! "
-    help
-  fi
-
-  info "... Argument checking : done !"
-  info "Lauching normalize and removing "chr" in first column ..."
-
-  cd ${COVERAGE_PATH}
-  for i in  *.bed; do sed 's/^chr//g' $i > $(basename "$i" | cut -d_ -f1 | cut -d. -f1).clamms.coverage.bed ; done
-  ls *.clamms.coverage.bed | cut -d '.' -f 1 | while read SAMPLEID ; do  ${CLAMMS_DIR}normalize_coverage ${SAMPLEID}.clamms.coverage.bed $WINDOWS_BED > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.norm.coverage.bed ;done
-
-  info "... normalize Done !"
 }
 
 normalize(){
 
-  # - Command ./clams.sh normalize /PATH/TO/coverage /PATH/TO/clams_dir SAMPLE 
-
-  CLAMMS_DIR=$1
-  SAMPLEID=$2
-  CLAMMSCOVERAGEFILE=$3
-  WINDOWS_BED=$4
-  LIBRARY_DIR=$5
-
-  debug "normalize : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
-  debug "normalize : SAMPLEID name is : \"${SAMPLEID}\""
-  debug "normalize : CLAMMSCOVERAGEFILE is : \"${CLAMMSCOVERAGEFILE}\""
-  debug "normalize : WINDOWS_BED is : \"${WINDOWS_BED}\""
-  debug "normalize : LIBRARY_DIR is : \"${LIBRARY_DIR}\""
- 
-  info "Checking normalize's arguments ..."
-  # - If exists
-  ## - Check if Coverage Path exists 
-  if [ ! -d ${COVERAGE_PATH} ]
-  then
-    error "\"${COVERAGE_PATH}\" does not exist !"
-    help 
-  fi
-  ## - Check 
-  if [ ! -d ${CLAMMS_DIR} ]
+  if [ $1 == "help" ]
   then 
-    error "\"${CLAMMS_DIR}\" does not exist ! "
-    help 
-  fi 
-  
-  # - Extension checking 
-  if [[ ${CLAMMSCOVERAGEFILE##*\.} != "bed" ]]
-  then 
-    error "\"${CLAMMSCOVERAGEFILE}\" must be .bed file !"
-  fi 
+    echo "MoLLuDiC (version ${VERSION}) normalizeFS help !"
+    echo "Usage ./molludic.sh normalizeFS <CLAMMS_DIRECTORY> <LIBRARY_NAME> <SAMPLEID> <CLAMMSCOVERAGEFILE> <WINDOWS_BED>"
+    echo "    <CLAMMS_DIRECTORY> : Directory where Clamms is installed."
+    echo "    <LIBRARY_NAME> : CNV library you want to use."
+    echo "    <SAMPLEID> : ID of wanted case"
+    echo "    <CLAMMSCOVERAGEFILE> : Coverage bed file of patient."
+    echo "    <WINDOWS_BED> : Bed file generated by windowsBed function (./molludic.sh windowsBed help for more informations)."
+    exit 1
+  else
+
+
+    CLAMMS_DIR=$1
+    LIBRARY_NAME=$2
+    SAMPLEID=$3
+    CLAMMSCOVERAGEFILE=$4
+    WINDOWS_BED=$5
+    LIBRARY_DIR=${CLAMMS_DIR}lib4Clamms/${LIBRARY_NAME}
+
+    debug "normalize : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
+    debug "normalize : SAMPLEID name is : \"${SAMPLEID}\""
+    debug "normalize : CLAMMSCOVERAGEFILE is : \"${CLAMMSCOVERAGEFILE}\""
+    debug "normalize : WINDOWS_BED is : \"${WINDOWS_BED}\""
+    debug "normalize : LIBRARY_DIR is : \"${LIBRARY_DIR}\""
  
-  if [[ ${WINDOWS_BED##*\.} != "bed" ]]
-  then
-    error "\"${WINDOWS_BED}\" must be .bed file !"
-  info "... Argument checking : done !"
-  fi
+    info "Checking normalize's arguments ..."
+    # - If exists
+    ## - Check if Coverage Path exists 
+    if [ ! -d ${COVERAGE_PATH} ]
+    then
+      error "\"${COVERAGE_PATH}\" does not exist !"
+      help 
+    fi
+    ## - Check 
+    if [ ! -d ${CLAMMS_DIR} ]
+    then 
+      error "\"${CLAMMS_DIR}\" does not exist ! "
+      help 
+    fi 
+    
+    # - Extension checking 
+    if [[ ${CLAMMSCOVERAGEFILE##*\.} != "bed" ]]
+    then 
+      error "\"${CLAMMSCOVERAGEFILE}\" must be .bed file !"
+    fi 
+ 
+    if [[ ${WINDOWS_BED##*\.} != "bed" ]]
+    then
+      error "\"${WINDOWS_BED}\" must be .bed file !"
+    info "... Argument checking : done !"
+    fi
 
-  info "Lauching normalize ..."
-  ${CLAMMS_DIR}normalize_coverage ${CLAMMSCOVERAGEFILE} ${WINDOWS_BED} > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.norm.coverage.bed
+    info "Lauching normalize ..."
+    ${CLAMMS_DIR}normalize_coverage ${CLAMMSCOVERAGEFILE} ${WINDOWS_BED} > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.norm.coverage.bed
 
-  info "... normalize Done !"
+    info "... normalize Done !"
+  fi 
 
 
 }
 
-
 ###########################################
-# PICARDMERGED - TO DO 
+# PICARDMERGED
 ###########################################
 
-#create metrics matrix for KD tree, all in one: (be careful, column position of picard metrics could change, better to do a grep instead)
 metricsMatrixFS(){
 
-  # - Command ./clams.sh metricsMatrix /PATH/TO/LIBRARY_DIR /PATH/TO/HS_FOLDER /PATH/TO/MATCH_METRICS_SCRIPT 
+
+
   LIBRARY_DIR=$1
   HS_FOLDER=$2
   PYTHON_PATH=$3
@@ -573,7 +605,7 @@ metricsMatrixFS(){
     echo ${SAMPLEID} >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt 
     # Create kd_sex_sample.txt
     echo "SEX" > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sex_sample.txt
-    grep "Y" ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.norm.coverage.bed | awk '{ x += $4; n++; } END { if (x/n >= 0.1) print "100"; else print "0"; }' >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sex_sample.txt
+    grep "Y" ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.norm.coverage.bed | awk '{ x += $4; n++; } END { if (x/n >= 0.1) print "100"; else print "1"; }' >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sex_sample.txt
     
     # Create a compatible hsmetrics file
     grep -v "#" $i | head -3 | tail -2 > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_hsmetrics.txt 
@@ -674,7 +706,7 @@ metricsMatrix() {
   echo ${SAMPLEID} >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt 
  # Create kd_sex_sample.txt
   echo "SEX" > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sex_sample.txt
-  grep "Y" ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.norm.coverage.bed | awk '{ x += $4; n++; } END { if (x/n >= 0.1) print "100"; else print "0"; }' >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sex_sample.txt
+  grep "Y" ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.norm.coverage.bed | awk '{ x += $4; n++; } END { if (x/n >= 0.1) print "100"; else print "1"; }' >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sex_sample.txt
 
   #path to multiple metrics
   grep -v "#" ${HSMETRICSTXT} | head -3 | tail -2 > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_hsmetrics.txt
@@ -891,7 +923,7 @@ cnvCallingFS() {
     help 
   fi 
 
-  if [ ! -f ${LIST_KDTREE} ]
+  if [ ! -d ${LIST_KDTREE} ]
   then 
     error "\"${LIST_KDTREE}\"  does not exist !"
     help 
@@ -910,7 +942,7 @@ cnvCallingFS() {
   ls ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/*.norm.coverage.bed |sort | while read FILE
   do 
     SAMPLE=$(basename "${FILE}" | cut -d_ -f1 | cut -d. -f1)
-    echo -e -n "${SAMPLE}\t${SAMPLE}.norm.coverage.bed\t"
+    echo -e -n "${SAMPLE}\t${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLE}.norm.coverage.bed\t"
     grep "Y" ${FILE} | awk '{ x += $4; n++; } END { if (x/n >= 0.1) print "M"; else print "F"; }'
   done > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/all.file.sex.sort.txt
 
@@ -918,7 +950,7 @@ cnvCallingFS() {
   do 
     SAMPLE=$(basename "${FILE}" | cut -d_ -f1 | cut -d. -f1)
     SEX=`echo "${SAMPLE}" | join - ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/all.file.sex.sort.txt | tr ' ' '\t' | cut -f 3`
-    join ${LIST_KDTREE} ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/all.file.sex.sort.txt | tr ' ' '\t' | cut -f 2- > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLE}.${KNN}nns.ref.panel.sex.txt
+    join ${LIST_KDTREE}${SAMPLE}.${KNN}nns.sort.txt ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/all.file.sex.sort.txt | tr ' ' '\t' | cut -f 2- > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLE}.${KNN}nns.ref.panel.sex.txt
     ${CLAMMS_DIR}fit_models ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLE}.${KNN}nns.ref.panel.sex.txt ${WINDOWS_BED} > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLE}.models.bed
     ${CLAMMS_DIR}call_cnv ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLE}.norm.coverage.bed ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLE}.models.bed --sex ${SEX} > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLE}.cnv.bed 
   done
@@ -1008,6 +1040,51 @@ cnvCalling() {
 # ANNOTATION 
 ############################################
 
+annotationFS(){
+
+  LIBRARY_DIR=$1
+  BEDTOOLS_PATH=$2
+  HGBED=$3 #/home/puce/resources/hg19/gene_annot_hg19_final.bed annotation.bed
+  HEADER_FILE=$4 #~/PROJECTS/EXOMES/header.annotated.bed or header.herit.annotated.bed 
+  CNV_BED=$5
+
+  debug "annotation : LIBRARY_DIR is : \"${LIBRARY_DIR}\""
+  debug "annotation : BEDTOOLS_PATH is : \"${BEDTOOLS_PATH}\""
+  debug "annotation : HGBED is : \"${HGBED}\""
+  debug "annotation : HEADER_FILE is : \"${HEADER_FILE}\""
+  debug "annotation : CNV_BED is : \"${CNV_BED}\""
+
+  info "Starting annotation ..."
+
+  for i in ${CNV_BED}*.cnv.bed
+  do 
+    SAMPLEID=$(basename "$i" | cut -d_ -f1 | cut -d. -f1)
+      info "Annotate for ${SAMPLEID}"
+    # remove unwanted column 
+    cut -f1-10 $i > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.cnv.cut.bed
+    # create a header
+    cat ${HEADER_FILE} >  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.bed 
+    cat ${HEADER_FILE} >  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.final.bed
+    cat ${HEADER_FILE} >  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.filtered.final.bed
+
+    #annotate with all data
+    ${BEDTOOLS_PATH} intersect -a ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.cnv.cut.bed -b ${HGBED} -loj >>  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.bed
+
+    #add size of CNV + link to decipher genome browser
+    
+   awk 'BEGIN { FS = OFS = "\t" }{if(NR>1){print $3-$2,"https://decipher.sanger.ac.uk/browser#q/"$4,$0}else{print}}'  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.bed >>  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.final.bed
+
+  awk '$1 <= 50000 && $10 <= 10 {print $0}' ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.final.bed >> ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.filtered.final.bed
+
+
+  awk -F "\t" '{print $16"\t"$8}' ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.filtered.final.bed > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.forachab.bed
+
+done
+  info "Annotation done !"
+
+  }
+
+
 annotation(){
   
   LIBRARY_DIR=$1
@@ -1042,12 +1119,13 @@ annotation(){
   then
     debug "Not in Dad and Mum condition"
     # remove unwanted column 
-    cut -f1-10 ${CNV_BED} > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.cut.cnv.bed
+    cut -f1-10 ${CNV_BED} > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.cnv.cut.bed
 
     # create a header
     cat ${HEADER_FILE} >  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.bed
     #annotate with all data
-    ${BEDTOOLS_PATH} intersect -a ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.cut.cnv.bed -b ${HGBED} -loj >>  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.bed
+    ${BEDTOOLS_PATH} intersect -a ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.cnv.cut.bed -b ${HGBED} -loj >>  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.bed
+    awk -F "\t" '{print $16"\t"$8}' ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.bed > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.forachab.bed
 
     #add size of CNV + link to decipher genome browser
     awk 'BEGIN { FS = OFS = "\t" }{if(NR>1){print $3-$2,"https://decipher.sanger.ac.uk/browser#q/"$4,$0}else{print}}'  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.bed >  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.final.bed 
@@ -1056,6 +1134,7 @@ annotation(){
     ${BEDTOOLS_PATH} intersect -a ${CNV_BED} -b ${FAMILY_BED} -loj | sort -k1,1 -k2,2n | ${BEDTOOLS_PATH} merge -c 4,5,6,7,8,9,10,24,23,25 -o distinct,distinct,distinct,distinct,distinct,distinct,distinct,collapse,collapse,collapse -delim "|" >  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.HERIT-DN.bed 
     cat ${HEADER_FILE} >  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.HERIT-DN.annotated.bed 
     ${BEDTOOLS_PATH} intersect -a  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.HERIT-DN.bed -b ${HGBED} -loj >>  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.HERIT-DN.annotated.bed
+    awk -F "\t" '{print $19"\t"$8}' ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.HERIT-DN.annotated.bed > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.HERIT-DN.annotated.forachab.bed
 
     awk 'BEGIN { FS = OFS = "\t" }{if(NR>1){print $3-$2,"https://decipher.sanger.ac.uk/browser#q/"$4,$0}else{print}}'  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.HERIT-DN.annotated.bed >  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.HERIT-DN.annotated.final.bed 
   fi 
@@ -1129,7 +1208,10 @@ case $1 in
   cnvCalling)
     cnvCalling $2 $3 $4 $5 $6 $7
     ;;
-  annptation)
+  annotationFS)
+    annotationFS $2 $3 $4 $5 $6
+    ;;
+  annotation)
     annotation $2 $3 $4 $5 $6 $7 $8 $9
     ;;
 esac 
