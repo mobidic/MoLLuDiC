@@ -559,97 +559,84 @@ normalize(){
 
 metricsMatrixFS(){
 
-
-
-  LIBRARY_DIR=$1
-  HS_FOLDER=$2
-  PYTHON_PATH=$3
-  MATCH_METRICS=$4
-
-  debug "metricsMatrixFS : LIBRARY_DIR is : \"${LIBRARY_DIR}\""
-  debug "metricsMatrixFS : HS_FOLDER is : \"${HS_FOLDER}\""
-  debug "metricsMatrixFS : MATCH_METRICS_SCRIPT is : \"${MATCH_METRICS}\""
-
-  info "Checking metricsMatrixFS' arguments ..."
-
-  # - Check if HS_FOLDER exists 
-  if [ ! -d ${HS_FOLDER} ]
-  then 
-    error "\"${HS_FOLDER}\" does not exist !"
-    help 
-  fi 
-
-  if [ ! -d ${LIBRARY_DIR} ]
+  if [ $1 == "help" ]
   then
-    error "\"${LIBRARY_DIR}\" does not exist !"
-    help
-  fi
+    echo "MoLLuDiC (version ${VERSION}) metricsMatrixFS help !"
+    echo "Usage ./molludic.sh metricsMatrixFS <LIBRARY_DIRECTORY> <HS_FOLDER> <PYTHON_PATH> <KEEP_FILE>"
+    echo "    <LIBRARY_DIRECTORY> : Path to your CNV library."
+    echo "    <HS_FOLDER> : Path to your folder containing HS metric files."
+    echo "    <PYTHON_PATH> : Path to your current Python version (Python3 recommanded). You can use python3 if binded."
+    echo "    <KEEP_FILE> (OPTIONNAL) : KEEP if you want to keep all files, \"\" else."
+    exit 1
+  else 
 
-  if [ ! -f ${MATCH_METRICS} ]
-  then
-    error "\"${MATCH_METRICS}\" does not exist !"
-    help
-  fi
+    LIBRARY_DIR=$1
+    HS_FOLDER=$2
+    PYTHON_PATH=$3
 
-  info "... Argument checking : done !"
-  info "Launching metricsMatrixFS ..."
+    debug "metricsMatrixFS : LIBRARY_DIR is : \"${LIBRARY_DIR}\""
+    debug "metricsMatrixFS : HS_FOLDER is : \"${HS_FOLDER}\""
+    debug "metricsMatrixFS : MATCH_METRICS_SCRIPT is : \"${MATCH_METRICS}\""
+
+    info "Checking metricsMatrixFS' arguments ..."
+
+    # - Check if HS_FOLDER exists 
+    if [ ! -d ${HS_FOLDER} ]
+    then 
+      error "\"${HS_FOLDER}\" does not exist !"
+      help 
+    fi 
+
+    if [ ! -d ${LIBRARY_DIR} ]
+    then
+      error "\"${LIBRARY_DIR}\" does not exist !"
+      help
+    fi
+
+    if [ ! -f ${MATCH_METRICS} ]
+    then
+      error "\"${MATCH_METRICS}\" does not exist !"
+      help
+    fi
+
+    info "... Argument checking : done !"
+    info "Launching metricsMatrixFS ..."
 
 
  
- # - Create a combine metrics file for kdTree
-  for i in ${HS_FOLDER}*hs_metrics.txt
-  do 
-    SAMPLEID=$(basename "$i" | cut -d_ -f1 | cut -d. -f1)
-    # Create kd_sample.txt
-    echo "SAMPLE" > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt
-    echo ${SAMPLEID} >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt 
-    # Create kd_sex_sample.txt
-    echo "SEX" > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sex_sample.txt
-    grep "Y" ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.norm.coverage.bed | awk '{ x += $4; n++; } END { if (x/n >= 0.1) print "100"; else print "1"; }' >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sex_sample.txt
-    
-    # Create a compatible hsmetrics file
-    grep -v "#" $i | head -3 | tail -2 > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_hsmetrics.txt 
-    # add insertsizemetrics
-    grep -v "#" ${HS_FOLDER}${SAMPLEID}*insertsize_metrics.txt | head -3 | tail -2  | paste ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_hsmetrics.txt -  > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_metrics.txt
- info "Metrics are matching for ${SAMPLEID}"
-   # select only useful column
-    ${PYTHON_PATH} ${MATCH_METRICS} ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_metrics.txt | head -n2 > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_allmetrics.txt
-   # add samplei and sex to metrics
-   paste ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_allmetrics.txt ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sex_sample.txt > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kdTree_metrics.txt 
-  done
-  
- # for i in ${HS_FOLDER}*insertsize_metrics.txt
- # do
-    #SAMPLEID=$(basename "$i" | cut -d_ -f1 | cut -d. -f1)
-   # grep -v "#" $i | head -3 | tail -2  | paste ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_hsmetrics.txt -  > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_metrics.txt
-  #done
+    # - Create a combine metrics file for kdTree
+    for i in ${HS_FOLDER}*hs_metrics.txt
+    do 
+      SAMPLEID=$(basename "$i" | cut -d_ -f1 | cut -d. -f1)
+      # Create kd_sample.txt
+      echo "SAMPLE" > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt
+      echo ${SAMPLEID} >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt 
+      # Create kd_sex_sample.txt
+      echo "SEX" > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sex_sample.txt
+      grep "Y" ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.norm.coverage.bed | awk '{ x += $4; n++; } END { if (x/n >= 0.1) print "100"; else print "1"; }' >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sex_sample.txt
+      
+      # Create a compatible hsmetrics file
+      grep -v "#" $i | head -3 | tail -2 > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_hsmetrics.txt 
+      # add insertsizemetrics
+      grep -v "#" ${HS_FOLDER}${SAMPLEID}*insertsize_metrics.txt | head -3 | tail -2  | paste ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_hsmetrics.txt -  > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_metrics.txt
+      info "Metrics are matching for ${SAMPLEID}"
+     # select only useful column
+      ${PYTHON_PATH} matchkdmetrics.py ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_metrics.txt | head -n2 > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_allmetrics.txt
+     # add samplei and sex to metrics
+     paste ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sample.txt ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_allmetrics.txt ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kd_sex_sample.txt > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kdTree_metrics.txt 
+    done
+    #head the file with parameter names
+    echo "SAMPLE	PCT_PF_UQ_READS	ON_BAIT_VS_SELECTED	PCT_TARGET_BASES_10X	PCT_TARGET_BASES_50X	AT_DROPOUT	GC_DROPOUT	MEAN_INSERT_SIZE	SEX"  > ${LIBRARY_DIR}projects/all/kdTreeMetrics/ALL_kdTreeMetrics.txt
+    #fill with the data (check if conversion of "," into "." is nedded)
+    for i in ${LIBRARY_DIR}projects/all/kdTreeMetrics/*kdTree_metrics.txt; do tail -n +2 $i | sed 's/,/./g' >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/ALL_kdTreeMetrics.txt ; done
+    info "... metricsMatrixFS done !"
 
-    # Sample ID insertsizer metrics .txt | sample id hs metrics .txt 
-#  for i in ${HS_FOLDER}*tmp_kd_metrics.txt
-#  do
-#    SAMPLEID=$(basename "$i" | cut -d_ -f1 | cut -d. -f1)
- #   python3 ${MATCH_METRICS} ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_metrics.txt > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_allmetrics.txt
- # done
-
-#  for i in ${LIBRARY_DIR}projects/all/kdTreeMetrics/*kd_sample.txt
-#  do 
-#   SAMPLEID=$(basename "$i" | cut -d_ -f1 | cut -d. -f1) 
-#   paste $i ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_tmp_kd_allmetrics.txt > ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLEID}_kdTree_metrics.txt 
-#  done
-  # $SAMPLEID_kdTree_metrics.txt a ecrire dans le répertoire kdTreeMetrics
-
-  #head the file with parameter names
-  echo "SAMPLE	PCT_PF_UQ_READS	ON_BAIT_VS_SELECTED	PCT_TARGET_BASES_10X	PCT_TARGET_BASES_50X	AT_DROPOUT	GC_DROPOUT	MEAN_INSERT_SIZE	SEX"  > ${LIBRARY_DIR}projects/all/kdTreeMetrics/ALL_kdTreeMetrics.txt
-  #fill with the data (check if conversion of "," into "." is nedded)
-  for i in ${LIBRARY_DIR}projects/all/kdTreeMetrics/*kdTree_metrics.txt; do tail -n +2 $i | sed 's/,/./g' >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/ALL_kdTreeMetrics.txt ; done
-
-  info "... metricsMatrixFS done !"
-
-  if [ "$4" != "DEBUG" ]
-  then
-   info "remove temporary files"
-  rm ${LIBRARY_DIR}projects/all/kdTreeMetrics/*_tmp_*
-  rm ${LIBRARY_DIR}projects/all/kdTreeMetrics/*_kd_sample.txt
+    if [ "$4" != "KEEP" ]
+    then
+     info "remove temporary files"
+      rm ${LIBRARY_DIR}projects/all/kdTreeMetrics/*_tmp_*
+      rm ${LIBRARY_DIR}projects/all/kdTreeMetrics/*_kd_sample.txt
+    fi
   fi
 
 }
