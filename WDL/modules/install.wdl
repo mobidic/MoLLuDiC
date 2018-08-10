@@ -1,11 +1,12 @@
 task install {
-
+  
+  String SrunLow
   File ClammsWorkflow
   String ClammsDir 
 
   command {
     
-    ${ClammsWorkflow} install ${ClammsDir}
+    ${SrunLow} ${ClammsWorkflow} install ${ClammsDir}
   
   }
 

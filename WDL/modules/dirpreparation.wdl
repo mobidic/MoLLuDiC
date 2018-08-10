@@ -1,7 +1,8 @@
 task dirpreparation {
-  
+ 
+  String StrunLow
   File ClammsWorkflow
-  String Option
+  String DirOption
   String ClammsDir
   String LibraryName
   Float InsertSize 
@@ -9,7 +10,7 @@ task dirpreparation {
 
   command {
 
-    ${ClammsWorkflow} dirpreparation ${Option}${ClammsDir} ${LibraryName} ${InsertSize}
+    ${SrunLow} ${ClammsWorkflow} dirpreparation ${DirOption}${ClammsDir} ${LibraryName} ${InsertSize}
 
   }
 
