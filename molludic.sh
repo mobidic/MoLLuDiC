@@ -494,7 +494,7 @@ normalize(){
   if [ $1 == "help" ]
   then 
     echo "MoLLuDiC (version ${VERSION}) normalizeFS help !"
-    echo "Usage ./molludic.sh normalizeFS <CLAMMS_DIRECTORY> <LIBRARY_NAME> <SAMPLEID> <CLAMMSCOVERAGEFILE> <WINDOWS_BED>"
+    echo "Usage ./molludic.sh normalize <CLAMMS_DIRECTORY> <LIBRARY_NAME> <SAMPLEID> <CLAMMSCOVERAGEFILE> <WINDOWS_BED>"
     echo "    <CLAMMS_DIRECTORY> : Directory where Clamms is installed."
     echo "    <LIBRARY_NAME> : CNV library you want to use."
     echo "    <SAMPLEID> : ID of wanted case"
