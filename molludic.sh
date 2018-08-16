@@ -483,7 +483,7 @@ normalizeFS() {
     info "Lauching normalize and removing "chr" in first column ..."
     # Think to do, remove or not theese files in COVERAGE_PATH
     for i in ${COVERAGE_PATH}*.bed; do sed 's/^chr//g' $i > ${COVERAGE_PATH}$(basename "$i" | cut -d_ -f1 | cut -d. -f1).clamms.coverage.bed ; done
-    for i in ${COVERAGE_PATH}*.clamms.coverage.bed ; do  ${CLAMMS_DIR}normalize_coverage $(basename "$i" | cut -d_ -f1 | cut -d. -f1).clamms.coverage.bed $WINDOWS_BED > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/$(basename "$i" | cut -d_ -f1 | cut -d. -f1).norm.coverage.bed ;done
+    for i in ${COVERAGE_PATH}*.clamms.coverage.bed ; do  ${CLAMMS_DIR}normalize_coverage ${COVERAGE_PATH}$(basename "$i" | cut -d_ -f1 | cut -d. -f1).clamms.coverage.bed $WINDOWS_BED > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/$(basename "$i" | cut -d_ -f1 | cut -d. -f1).norm.coverage.bed ;done
 
     info "... normalize Done !"
   fi 
