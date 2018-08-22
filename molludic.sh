@@ -483,7 +483,7 @@ normalizeFS() {
     info "Lauching normalize and removing "chr" in first column ..."
     # Think to do, remove or not theese files in COVERAGE_PATH
     for i in ${COVERAGE_PATH}*.bed; do sed 's/^chr//g' $i > ${COVERAGE_PATH}$(basename "$i" | cut -d_ -f1 | cut -d. -f1).clamms.coverage.bed ; done
-    for i in ${COVERAGE_PATH}*.clamms.coverage.bed ; do  ${CLAMMS_DIR}normalize_coverage $(basename "$i" | cut -d_ -f1 | cut -d. -f1).clamms.coverage.bed $WINDOWS_BED > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/$(basename "$i" | cut -d_ -f1 | cut -d. -f1).norm.coverage.bed ;done
+    for i in ${COVERAGE_PATH}*.clamms.coverage.bed ; do  ${CLAMMS_DIR}normalize_coverage ${COVERAGE_PATH}$(basename "$i" | cut -d_ -f1 | cut -d. -f1).clamms.coverage.bed $WINDOWS_BED > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/$(basename "$i" | cut -d_ -f1 | cut -d. -f1).norm.coverage.bed ;done
 
     info "... normalize Done !"
   fi 
@@ -786,13 +786,18 @@ removeRelatives() {
     info "... Argument checking : done !"
     info "Launching removeRelatives ..."
 
+# grep "a[1]" ${ALLKDTREE} >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[1]"_ALL_kdTreeMetrics.txt ; tail -n+2 ${ALLKDTREE} | grep -v "a[1]" >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[1]"_ALL_kdTreeMetrics.txt" )
+
     awk 'BEGIN{family="";}{
       split($0,a,"\t");
       if(NF == 0 ){
         next;
       }
       if(length(a)== 1){
-        system("cp ${ALLKDTREE} ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[1]"_ALL_kdTreeMetrics.txt" )
+        print a[1] " no family found  "family;
+        system("grep AT_DROPOUT ${ALLKDTREE} > ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[1]"_ALL_kdTreeMetrics.txt" )
+        system("grep "a[1]" ${ALLKDTREE} >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[1]"_ALL_kdTreeMetrics.txt" )
+        system("tail -n+2 ${ALLKDTREE} | grep -v "a[1]" >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[1]"_ALL_kdTreeMetrics.txt" )
       }else{
         for (i=1;i<=length(a);i++){
           for (j=1;j<=length(a);j++){
@@ -800,7 +805,9 @@ removeRelatives() {
           }
           family = "\""family"^####################\"";
           print a[i] "family is here:  "family;
-          system("grep -vE "family" ${ALLKDTREE} >  ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[i]"_ALL_kdTreeMetrics.txt")
+          system("grep AT_DROPOUT ${ALLKDTREE} > ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[1]"_ALL_kdTreeMetrics.txt" )  
+          system("grep "a[1]" ${ALLKDTREE} >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[1]"_ALL_kdTreeMetrics.txt" ) 
+          system("grep -vE "family" ${ALLKDTREE} >>  ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[i]"_ALL_kdTreeMetrics.txt") 
           family=""
         };
       }
@@ -871,8 +878,9 @@ makekdtreeFS() {
     info "Launching KdTreeFS RScript ..."
 
  
-    for SAMPLE in ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLE}_ALL_kdTreeMetrics.txt
+    for FILE in ${LIBRARY_DIR}projects/all/kdTreeMetrics/*_ALL_kdTreeMetrics.txt
     do
+       SAMPLE=$(basename "${FILE}" | cut -d_ -f1 | cut -d. -f1)
       ${RSCRIPT_PATH} compute_kdTree.R ${KNN} ${LIBRARY_DIR}projects/all/kdTreeMetrics/${SAMPLE}_ALL_kdTreeMetrics.txt ${LIBRARY_DIR}projects/all/kdTreeMetrics/ #${FROM_SCRATCH}
     done 
 
@@ -977,7 +985,7 @@ cnvCallingFS() {
 
     CLAMMS_DIR=$1
     LIBRARY_NAME=$2
-    LIBRARY_DIR=${CLAMMS_DIR}lib4Clamms/${LIBRARY_NAME}
+    LIBRARY_DIR=${CLAMMS_DIR}lib4Clamms/${LIBRARY_NAME}/
     WINDOWS_BED=$3
     KNN=$4
 
