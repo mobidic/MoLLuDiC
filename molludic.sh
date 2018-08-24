@@ -990,7 +990,7 @@ cnvCallingFS() {
     KNN=$4
 
     debug "cnvCalling : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
-    debug "cnvCalling : LIBRARY_NALE is : \"${LIBRARY_NAME}"
+    debug "cnvCalling : LIBRARY_NAME is : \"${LIBRARY_NAME}\""
     debug "cnvCalling : LIBRARY_DIR is :\"${LIBRARY_DIR}\""
     debug "cnvCalling : WINDOWS_BED is : \"${WINDOWS_BED}\""
     debug "cnvCalling : KNN is : \"${KNN}\""
@@ -1151,14 +1151,12 @@ annotationFS() {
     echo "    <LIBRARY_DIRECTORY> : Path to your CNV library."
     echo "    <BEDTOOLS_PATH> : Path to Bedtools on your computer. You can use bedtools if binded."
     echo "    <HGBED> : HG19 annotated bed file."
-    echo "    <CNV_BED> : cnv.bed file generated thanks to cnvCalling(FS) function (./molludic.sh cnvCallingFS help for more informations)."
     exit 1
   else 
 
     LIBRARY_DIR=$1
     BEDTOOLS_PATH=$2
     HGBED=$3 #/home/puce/resources/hg19/gene_annot_hg19_final.bed annotation.bed
-    CNV_BED=$4
     
     info "annotationFS : argument checking ..."
     if [ ! -d ${LIBRARY_DIR} ]
@@ -1167,32 +1165,20 @@ annotationFS() {
       annotationFS help
     fi 
 
-    if [ ! -f ${BEDTOOLS_PATH} ]
-    then 
-      error "\"${BEDTOOLS_PATH}\" does not exist !"
-      annotationFS help 
-    fi 
-
     if [ ! -f ${HGBED} ]
     then 
       error "\"${HGBED}\" does not exist !"
       annotationFS help 
     fi 
 
-    if [ ! -f ${CNV_BED} ]
-    then 
-      error "\"${CNV_BED}\" does not exist !"
-      annotationFS help
-    fi 
     info "annotationFS : argument checking done !"
     debug "annotation : LIBRARY_DIR is : \"${LIBRARY_DIR}\""
     debug "annotation : BEDTOOLS_PATH is : \"${BEDTOOLS_PATH}\""
     debug "annotation : HGBED is : \"${HGBED}\""
-    debug "annotation : CNV_BED is : \"${CNV_BED}\""
 
     info "Starting annotation ..."
 
-    for i in ${CNV_BED}*.cnv.bed
+    for i in ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/*.cnv.bed
     do 
       SAMPLEID=$(basename "$i" | cut -d_ -f1 | cut -d. -f1)
       info "Annotate for ${SAMPLEID}"
@@ -1209,7 +1195,7 @@ annotationFS() {
       #add size of CNV + link to decipher genome browser
       awk 'BEGIN { FS = OFS = "\t" }{if(NR>1){print $3-$2,"https://decipher.sanger.ac.uk/browser#q/"$4,$0}else{print}}'  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.bed >>  ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.final.bed
       awk '$1 <= 50000 && $10 <= 10 {print $0}' ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.final.bed >> ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.filtered.final.bed
-      awk -F "\t" '{print $16"\t"$8}' ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.filtered.final.bed > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.forachab.bed
+      awk -F "\t" '{print $16"\t"$8"|"$6"|SAMPLE="$7"|Copy_Number="$9"|Num_windows="$10"|Q_SOME="$11"|Q_EXACT="$12}' ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.filtered.final.bed > ${LIBRARY_DIR}projects/all/normCoverageNoChrBeds/${SAMPLEID}.annotated.forachab.bed
 
     done
     info "Annotation done !"
