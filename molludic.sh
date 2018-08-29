@@ -138,16 +138,13 @@ dirpreparation() {
       then 
         error "\"${INSERT_SIZE}\" must be an integer ! Please select a correct value."
         exit 1
-      fi 
-      mkdir ${LIBRARY_DIR}windowsBeds/insertSize${INSERT_SIZE}/
-      ;;
-
+      fi mkdir ${LIBRARY_DIR}windowsBeds/insertSize${INSERT_SIZE}/ ;; 
     all)
       CLAMMS_DIR=$2
       LIBRARY_NAME=$3
       INSER_SIZE=$4
       LIBRARY_DIR=${CLAMMS_DIR}lib4Clamms/${LIBRARY_NAME}
-      ddebug "dirpreparation library : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
+      debug "dirpreparation library : CLAMMS_DIR is : \"${CLAMMS_DIR}\""
       debug "dirpreparation library : LIBRARY_NAME is : \"${LIBRARY_NAME}\""
       mkdir ${CLAMMS_DIR}
       mkdir ${CLAMMS_DIR}lib4Clamms
