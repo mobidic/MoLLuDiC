@@ -138,7 +138,10 @@ dirpreparation() {
       then 
         error "\"${INSERT_SIZE}\" must be an integer ! Please select a correct value."
         exit 1
-      fi mkdir ${LIBRARY_DIR}windowsBeds/insertSize${INSERT_SIZE}/ ;; 
+      fi 
+      mkdir ${LIBRARY_DIR}windowsBeds/insertSize${INSERT_SIZE}/ 
+      ;; 
+
     all)
       CLAMMS_DIR=$2
       LIBRARY_NAME=$3
@@ -785,27 +788,37 @@ removeRelatives() {
 
 # grep "a[1]" ${ALLKDTREE} >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[1]"_ALL_kdTreeMetrics.txt ; tail -n+2 ${ALLKDTREE} | grep -v "a[1]" >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[1]"_ALL_kdTreeMetrics.txt" )
 
-    awk 'BEGIN{family="";}{
+    awk 'BEGIN{family="";target=""}{
       split($0,a,"\t");
       if(NF == 0 ){
         next;
       }
       if(length(a)== 1){
         print a[1] " no family found  "family;
+        target = "^"a[1]"\\s";
+        target = "\""target"\"";
         system("grep AT_DROPOUT ${ALLKDTREE} > ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[1]"_ALL_kdTreeMetrics.txt" )
-        system("grep "a[1]" ${ALLKDTREE} >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[1]"_ALL_kdTreeMetrics.txt" )
-        system("tail -n+2 ${ALLKDTREE} | grep -v "a[1]" >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[1]"_ALL_kdTreeMetrics.txt" )
+        system("grep -E "target" ${ALLKDTREE} >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[1]"_ALL_kdTreeMetrics.txt" )
+        system("tail -n+2 ${ALLKDTREE} | grep -vE "target" >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[1]"_ALL_kdTreeMetrics.txt" )
+
+        target="";
+
       }else{
         for (i=1;i<=length(a);i++){
           for (j=1;j<=length(a);j++){
             if(j!=i){family  = family"^"a[j]"\\s|"}
           }
           family = "\""family"^####################\"";
-          print a[i] "family is here:  "family;
-          system("grep AT_DROPOUT ${ALLKDTREE} > ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[1]"_ALL_kdTreeMetrics.txt" )  
-          system("grep "a[1]" ${ALLKDTREE} >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[1]"_ALL_kdTreeMetrics.txt" ) 
-          system("grep -vE "family" ${ALLKDTREE} >>  ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[i]"_ALL_kdTreeMetrics.txt") 
-          family=""
+          print a[i] " family is here:  "family;
+          target="^"a[i]"\\s"; 
+          target="\""target"\""; 
+          print "my target is : "target;
+          system("grep AT_DROPOUT ${ALLKDTREE} > ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[i]"_ALL_kdTreeMetrics.txt" )  
+          system("grep -E "target" ${ALLKDTREE} >> ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[i]"_ALL_kdTreeMetrics.txt" ) 
+          system("grep -vE "family" ${ALLKDTREE} | tail -n+2 >>  ${LIBRARY_DIR}projects/all/kdTreeMetrics/"a[i]"_ALL_kdTreeMetrics.txt") 
+          family="";
+          target="";
+
         };
       }
     }'  ${FAMILYLIST}
